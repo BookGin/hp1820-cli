@@ -7,6 +7,7 @@ import urllib.request, urllib.error
 URLS = {
     'login': '/htdocs/login/login.lua',
     'logout': '/htdocs/pages/main/logout.lsp',
+    'save_config': '/htdocs/lua/ajax/save_cfg.lua?save=1',
     'dashboard': '/htdocs/pages/base/dashboard.lsp',
     'all_config': '/htdocs/pages/base/support.lsp',
     'port_status': '/htdocs/pages/base/port_summary.lsp?tg=switch_port_config&showtab=1',
@@ -35,6 +36,17 @@ def connect(_protocal, _host):
     protocal, host = _protocal, _host
     return True
 
+# DEPRECATED: This method uses the same API as showDashboard()
+def getSwitchName():
+    raw_response = httpGet('dashboard')
+    html = BeautifulSoup(raw_response, 'html.parser')
+    for row in html.find_all('tr'):
+        cols = list(row.find_all('td'))
+        if len(cols) == 2:
+            (key, val) = (cols[0], cols[1])
+            if key.get_text() == "System Name":
+                return val.input['value']
+
 def login(username, password):
     try:
         raw_response = httpPost('login', {'username': username, 'password': password})
@@ -55,27 +67,6 @@ def logout():
 def close():
     session.close()
     print('Session closed.')
-
-def NOT_USE():
-    login("admin", "password")
-    try:
-        showDashboard()
-        showPortStatus()
-        showVlanStatus()
-        setSystemInfo("SwitchName", "Location", "Contact")
-        setNetwork()
-        addVlan("9-11")
-        showVlanStatus()
-        showVlanPort()
-        delVlan("10")
-        accessVlan("untagged", "5,6,7,8", "11") # interfaces, vlan id
-        #setAccount("admin", "password", "password")
-        logout()
-        session.close()
-    except Exception as e:
-        print(e)
-        logout()
-        session.close()
 
 def httpGet(operation):
     return session.get(protocal + PROTOCAL_DELIMETER + host + URLS[operation]).text
@@ -124,12 +115,9 @@ def setSystemInfo(name, loc, con):
     postdata = {'sys_name': name, 'sys_location': loc, 'sys_contact': con, 'b_form1_submit': 'Apply', 'b_form1_clicked': 'b_form1_submit'}
     httpPost('set_sysinfo', postdata)
 
-def setNetwork():
-    postdata = {'protocol_type_sel[]': 'static', # or dhcp
-        'ip_addr': '192.168.1.1',
-        'subnet_mask': '255.255.255.0',
-        'gateway_address': '192.168.1.87',
-
+def setNetwork(mode, ip = '', subnet = '', gateway = ''):
+    required_data = {
+        'protocol_type_sel[]': mode,  #static or dhcp
         'session_timeout': '3',
         'mgmt_vlan_id_sel[]': '1',
         'mgmt_port_sel[]': 'none',
@@ -138,9 +126,18 @@ def setNetwork():
         'b_form1_submit': 'Apply',
         'b_form1_clicked': 'b_form1_submit'
     }
+    if mode == "static":
+        ip_data = {
+            'ip_addr': ip,
+            'subnet_mask': subnet,
+            'gateway_address': gateway
+        }
+        postdata = {**ip_data,  **required_data}
+    else:
+        postdata = required_data
     httpPost('set_network', postdata)
 
-def setAccount(username, old_pwd, new_pwd):
+def setAccount(username, old_pwd, new_pwd, confirm_new_passwd):
     postdata = {
         'user_name': username,
         'current_password': old_pwd,
@@ -197,3 +194,28 @@ def showVlanPort():
         for row in table.find_all("tr"):
             [print(col.get_text(), end="   /") for col in row.find_all("td")]
             print()
+
+def saveConfig():
+    httpPost('save_config', {})
+
+if __name__ == "__main__":
+    login("admin", "")
+    try:
+        showDashboard()
+        showPortStatus()
+        showVlanStatus()
+        setSystemInfo("SwitchName", "Location", "Contact")
+        setNetwork()
+        addVlan("9-11")
+        showVlanStatus()
+        showVlanPort()
+        delVlan("10")
+        accessVlan("untagged", "5,6,7,8", "11") # interfaces, vlan id
+        #setAccount("admin", "password", "password", "password")
+        logout()
+        session.close()
+    except Exception as e:
+        print(e)
+        logout()
+        session.close()
+
