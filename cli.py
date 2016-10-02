@@ -2,6 +2,7 @@ import requests
 import json
 import re as regex
 from bs4 import BeautifulSoup
+import urllib.request, urllib.error
 
 URLS = {
     'login': '/htdocs/login/login.lua',
@@ -17,14 +18,22 @@ URLS = {
     'set_network': '/htdocs/pages/base/network_ipv4_cfg.lsp',
     'set_account': '/htdocs/pages/base/user_accounts.lsp'
 }
-PROTOCAL = "http" + "://"
-
+PROTOCAL_DELIMETER = "://"
+protocal = ""
 host = ""
 session = requests.Session()
 
-def connect(_host):
-    global host
-    host = _host
+def connect(_protocal, _host):
+    url = _protocal + PROTOCAL_DELIMETER + _host
+    try:
+        response = urllib.request.urlopen(url, timeout=5)
+    except urllib.error.URLError as err:
+        print("Cannot connect %s : %s" % (url, err.reason))
+        return False
+
+    global host, protocal
+    protocal, host = _protocal, _host
+    return True
 
 def login(username, password):
     try:
@@ -36,7 +45,7 @@ def login(username, password):
     if response['error']:
         print('Cannot login: ' + response['error'])
         return False
-    print('Login successful!')
+
     return True
 
 def logout():
@@ -69,10 +78,10 @@ def NOT_USE():
         session.close()
 
 def httpGet(operation):
-    return session.get(PROTOCAL + host + URLS[operation]).text
+    return session.get(protocal + PROTOCAL_DELIMETER + host + URLS[operation]).text
 
 def httpPost(operation, post_data):
-    return session.post(PROTOCAL + host + URLS[operation], post_data).text
+    return session.post(protocal + PROTOCAL_DELIMETER + host + URLS[operation], post_data).text
 
 def showDashboard():
     raw_response = httpGet('dashboard')

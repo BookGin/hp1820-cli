@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+import sys
+from getpass import getpass
+
+import cli
+import hpshell
+
+def checkArgument():
+    if len(sys.argv) != 2:
+        print("http - Connect a switch through HTTP protocal")
+        print("Usage: http [user@]host")
+        print("(If not specified, username is admin.)")
+        sys.exit(0)
+
+def parseArgument():
+    if '@' in sys.argv[1]:
+        return sys.argv[1].split('@') 
+    else:
+        return "admin", sys.argv[1]
+
+def checkConnection(protocal, host):
+    if not cli.connect(protocal, host):
+        print("Cannot connect to remote host %s through %s" % (host, protocal))
+        sys.exit(0)
+
+def execPrompt():
+    hpshell.run()
+
+if __name__ == "__main__":
+    checkArgument()
+    user, host = parseArgument()
+    protocal = "http" # Support http currently, https is future work
+    checkConnection(protocal, host)
+
+    wrong_times = 0
+    while wrong_times < 3:
+        password = getpass('Password: ')
+        if cli.login(user, password):
+            break
+        wrong_times += 1
+
+    if wrong_times >= 3:
+        print("3 incorrect password attempts")
+        sys.exit(0)
+
+    execPrompt()
