@@ -1,5 +1,6 @@
 import requests
 import json
+import time
 import re as regex
 from bs4 import BeautifulSoup
 import urllib.request, urllib.error
@@ -7,8 +8,10 @@ import urllib.request, urllib.error
 URLS = {
     'login': '/htdocs/login/login.lua',
     'logout': '/htdocs/pages/main/logout.lsp',
+    'factory_default': '/htdocs/pages/base/reset_cfg.lsp',
     'save_config': '/htdocs/lua/ajax/save_cfg.lua?save=1',
     'dashboard': '/htdocs/pages/base/dashboard.lsp',
+    'mac_table': '/htdocs/pages/base/mac_address_table.lsp',
     'all_config': '/htdocs/pages/base/support.lsp',
     'port_status': '/htdocs/pages/base/port_summary.lsp?tg=switch_port_config&showtab=1',
     'vlan_status': '/htdocs/pages/switching/vlan_status.lsp',
@@ -17,7 +20,11 @@ URLS = {
     'access_vlan': '/htdocs/pages/switching/vlan_per_port_modal.lsp',
     'set_sysinfo': '/htdocs/pages/base/dashboard.lsp',
     'set_network': '/htdocs/pages/base/network_ipv4_cfg.lsp',
-    'set_account': '/htdocs/pages/base/user_accounts.lsp'
+    'set_timezone': '/htdocs/pages/base/timezone_cfg.lsp',
+    'set_sntp': '/htdocs/pages/base/sntp_global_config.lsp',
+    'set_account': '/htdocs/pages/base/user_accounts.lsp',
+    'cert_state': '/htdocs/lua/ajax/https_cert_stat_ajax.lua',
+    'https_config': '/htdocs/pages/base/https_cfg.lsp'
 }
 PROTOCAL_DELIMETER = "://"
 protocal = ""
@@ -97,13 +104,19 @@ def showPortStatus():
     print(['Interface','Admin Mode','Physical Type','Port Status','Physical Mode','Link Speed','MTU'])
     print(*data, sep='\n')
 
-def parseStatus(raw_response):
+def showMacTable():
+    raw_response = httpGet('mac_table')
+    data = parseStatus(raw_response, ignore_first = False)
+    print(['VLAN ID', 'MAC Address', 'Interface', 'Interface Index', 'Status'])
+    print(*data, sep='\n')
+
+def parseStatus(raw_response, ignore_first = True):
     string = regex.search('aDataSet = (.*)var aColumns', raw_response.replace('\n', '')).group(1)
     # swap single quote and double quote because jQuery format is not compatiblewith JSON
     string = string.replace("'", "`").replace('"', "'").replace("`", '"')
     string = string.rstrip().rstrip(';')
     obj = json.loads(string)
-    return [i[1:] for i in obj]
+    return [i[1 if ignore_first else 0:] for i in obj]
 
 def showVlanStatus():
     raw_response = httpGet('vlan_status')
@@ -115,11 +128,11 @@ def setSystemInfo(name, loc, con):
     postdata = {'sys_name': name, 'sys_location': loc, 'sys_contact': con, 'b_form1_submit': 'Apply', 'b_form1_clicked': 'b_form1_submit'}
     httpPost('set_sysinfo', postdata)
 
-def setNetwork(mode, ip = '', subnet = '', gateway = ''):
+def setNetwork(mode, ip = '', subnet = '', gateway = '', mgmt_vlan = '1'):
     required_data = {
         'protocol_type_sel[]': mode,  #static or dhcp
         'session_timeout': '3',
-        'mgmt_vlan_id_sel[]': '1',
+        'mgmt_vlan_id_sel[]': mgmt_vlan,
         'mgmt_port_sel[]': 'none',
         'snmp_sel[]': 'enabled',
         'community_name': 'public',
@@ -154,6 +167,26 @@ def setAccount(username, old_pwd, new_pwd, confirm_new_passwd):
     else:
         print("Username/Password changed successfully")
 
+def setTimezone():
+    postdata = {
+        'offset_sel[]': '77',
+        'zone': 'TPE',
+        'b_form1_submit': 'Apply',
+        'b_form1_clicked': 'b_form1_submit'
+    }
+    httpPost('set_timezone', postdata)
+
+def setSntp(sntp_ip):
+    postdata = {
+        'set_sys_time_sel[]': 'using_sntp',
+        'client_mode_sel[]': 'enabled',
+        'host_name_ipaddr': sntp_ip,
+        'server_port': '123',
+        'date_alt': '1970-1-1',
+        'b_form1_submit': 'Apply',
+        'b_form1_clicked': 'b_form1_submit'
+    }
+    httpPost('set_sntp', postdata)
 
 def addVlan(vlan_id_range):
     postdata = {
@@ -175,11 +208,11 @@ def delVlan(vlan_id):
 
 def accessVlan(mode, interfaces, vlan_id):
     postdata = {
-        'part_tagg_sel[]': mode, # tagged, untagged
+        'part_tagg_sel[]': mode, # tagged, untagged, exclude
         'vlan': vlan_id,
         'intfStr': interfaces, # 5,6,7,8
         'part_exclude': 'yes',
-        'parentQStr': '?vlan=%s' % vlan_id,
+        'parentQStr': '?vlan=%s' % vlan_id, # looks like this doesn't matter
         'b_modal1_clicked': 'b_modal1_submit'
     }
     httpPost('access_vlan', postdata)
@@ -195,17 +228,47 @@ def showVlanPort():
             [print(col.get_text(), end="   /") for col in row.find_all("td")]
             print()
 
+def genCert():
+    postdata = {
+        'http_mode_sel[]': 'enabled',
+        'https_mode_sel[]': 'disabled',
+        'soft_timeout': '5',
+        'hard_timeout': '24',
+        'certificate_stat': 'Absent',
+        'b_form1_clicked': 'b_form1_bt_generate'
+    }
+    httpPost('https_config', postdata)
+    while httpGet('cert_state') != 'Present':
+        time.sleep(1)
+
+def setHttps(http, https):
+    postdata = {
+        'http_mode_sel[]': http,
+        'https_mode_sel[]': https,
+        'soft_timeout': '5',
+        'hard_timeout': '24',
+        'certificate_stat': 'Present',
+        'b_form1_submit': 'Apply',
+        'b_form1_clicked': 'b_form1_submit'
+    }
+    httpPost('https_config', postdata)
+
 def saveConfig():
     httpPost('save_config', {})
 
+def reset():
+    httpPost('factory_default', {"b_form1_clicked": "b_form1_reset"})
+
 if __name__ == "__main__":
-    login("admin", "")
+    connect("http", "192.168.1.1")
+    login("admin", "password")
     try:
+        showMacTable()
         showDashboard()
         showPortStatus()
         showVlanStatus()
         setSystemInfo("SwitchName", "Location", "Contact")
-        setNetwork()
+        #setNetwork()
         addVlan("9-11")
         showVlanStatus()
         showVlanPort()
