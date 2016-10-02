@@ -79,6 +79,14 @@ class Prompt(Cmd):
             choice = input("http only[http]/https only[https]/both[both]?")
         cli.setHttps(available_choice[choice][0], available_choice[choice][1])
 
+    def do_reset(self, args):
+        choice = input("Restore to factory configuration?(y/n)")
+        while choice not in "yn":
+            choice = input("Restore to factory configuration?(y/n)")
+
+        if choice == 'y':
+            cli.reset()
+
 prompt = Prompt()
 
 def run():
@@ -88,7 +96,7 @@ def run():
             prompt.cmdloop('Type exit to quit, help for help.')
         except KeyboardInterrupt:
             pass
-        except AttributeError as e:
+        except Exception as e:
             print("An error occured: " + e)
             print("Maybe the session is timeout?")
             raise SystemExit
