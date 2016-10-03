@@ -10,6 +10,7 @@ URLS = {
     'logout': '/htdocs/pages/main/logout.lsp',
     'factory_default': '/htdocs/pages/base/reset_cfg.lsp',
     'save_config': '/htdocs/lua/ajax/save_cfg.lua?save=1',
+    'file_transfer': '/htdocs/lua/ajax/file_download_ajax.lua?protocol=6',
     'dashboard': '/htdocs/pages/base/dashboard.lsp',
     'mac_table': '/htdocs/pages/base/mac_address_table.lsp',
     'all_config': '/htdocs/pages/base/support.lsp',
@@ -88,6 +89,9 @@ def httpGet(operation):
 def httpPost(operation, post_data):
     return session.post(protocal + PROTOCAL_DELIMETER + host + URLS[operation], post_data, verify=False).text
 
+def httpPostFile(operation, post_data, files):
+    return session.post(protocal + PROTOCAL_DELIMETER + host + URLS[operation], post_data, files = files, verify=False).text
+
 def showDashboard():
     raw_response = httpGet('dashboard')
     html = BeautifulSoup(raw_response, 'html.parser')
@@ -132,8 +136,8 @@ def showVlanStatus():
     print(*data, sep='\n')
 
 def setSystemInfo(name, loc, con):
-    postdata = {'sys_name': name, 'sys_location': loc, 'sys_contact': con, 'b_form1_submit': 'Apply', 'b_form1_clicked': 'b_form1_submit'}
-    httpPost('set_sysinfo', postdata)
+    post_data = {'sys_name': name, 'sys_location': loc, 'sys_contact': con, 'b_form1_submit': 'Apply', 'b_form1_clicked': 'b_form1_submit'}
+    httpPost('set_sysinfo', post_data)
 
 def setNetwork(mode, ip = '', subnet = '', gateway = '', mgmt_vlan = '1'):
     required_data = {
@@ -152,13 +156,13 @@ def setNetwork(mode, ip = '', subnet = '', gateway = '', mgmt_vlan = '1'):
             'subnet_mask': subnet,
             'gateway_address': gateway
         }
-        postdata = {**ip_data,  **required_data}
+        post_data = {**ip_data,  **required_data}
     else:
-        postdata = required_data
-    httpPost('set_network', postdata)
+        post_data = required_data
+    httpPost('set_network', post_data)
 
 def setAccount(username, old_pwd, new_pwd, confirm_new_passwd):
-    postdata = {
+    post_data = {
         'user_name': username,
         'current_password': old_pwd,
         'new_password': new_pwd,
@@ -166,7 +170,7 @@ def setAccount(username, old_pwd, new_pwd, confirm_new_passwd):
         'b_form1_submit': 'Apply',
         'b_form1_clicked': 'b_form1_submit'
     }
-    response = httpPost('set_account', postdata)
+    response = httpPost('set_account', post_data)
     if 'Required field' in response:
         print("Cannot update password, required field is not valid")
     elif 'password is incorrect' in response:
@@ -175,16 +179,16 @@ def setAccount(username, old_pwd, new_pwd, confirm_new_passwd):
         print("Username/Password changed successfully")
 
 def setTimezone():
-    postdata = {
+    post_data = {
         'offset_sel[]': '77',
         'zone': 'TPE',
         'b_form1_submit': 'Apply',
         'b_form1_clicked': 'b_form1_submit'
     }
-    httpPost('set_timezone', postdata)
+    httpPost('set_timezone', post_data)
 
 def setSntp(sntp_ip):
-    postdata = {
+    post_data = {
         'set_sys_time_sel[]': 'using_sntp',
         'client_mode_sel[]': 'enabled',
         'host_name_ipaddr': sntp_ip,
@@ -193,28 +197,28 @@ def setSntp(sntp_ip):
         'b_form1_submit': 'Apply',
         'b_form1_clicked': 'b_form1_submit'
     }
-    httpPost('set_sntp', postdata)
+    httpPost('set_sntp', post_data)
 
 def addVlan(vlan_id_range):
-    postdata = {
+    post_data = {
         'vlan_id_range': vlan_id_range,
         'vlancount': '1',
         'b_modal1_clicked': 'b_modal1_submit'
     }
-    httpPost('add_vlan', postdata)
+    httpPost('add_vlan', post_data)
 
 def delVlan(vlan_id):
     #TODO: delete Multiple vlan, but this is a dict, chkrow[] cannot have multi value
-    postdata = {
+    post_data = {
         'sorttable1_length': '-1',
         'chkrow[]': vlan_id,
         #'chkrow[]': '11',
         'b_form1_clicked': 'b_form1_dt_remove'
     }
-    httpPost('del_vlan', postdata)
+    httpPost('del_vlan', post_data)
 
 def accessVlan(mode, interfaces, vlan_id):
-    postdata = {
+    post_data = {
         'part_tagg_sel[]': mode, # tagged, untagged, exclude
         'vlan': vlan_id,
         'intfStr': interfaces, # 5,6,7,8
@@ -222,7 +226,7 @@ def accessVlan(mode, interfaces, vlan_id):
         'parentQStr': '?vlan=%s' % vlan_id, # looks like this doesn't matter
         'b_modal1_clicked': 'b_modal1_submit'
     }
-    httpPost('access_vlan', postdata)
+    httpPost('access_vlan', post_data)
 
 def showVlanPort():
     raw_response = httpGet('all_config')
@@ -236,7 +240,7 @@ def showVlanPort():
             print()
 
 def genCert():
-    postdata = {
+    post_data = {
         'http_mode_sel[]': 'enabled',
         'https_mode_sel[]': 'disabled',
         'soft_timeout': '5',
@@ -244,12 +248,12 @@ def genCert():
         'certificate_stat': 'Absent',
         'b_form1_clicked': 'b_form1_bt_generate'
     }
-    httpPost('https_config', postdata)
+    httpPost('https_config', post_data)
     while httpGet('cert_state') != 'Present':
         time.sleep(1)
 
 def setHttps(http, https):
-    postdata = {
+    post_data = {
         'http_mode_sel[]': http,
         'https_mode_sel[]': https,
         'soft_timeout': '5',
@@ -258,13 +262,26 @@ def setHttps(http, https):
         'b_form1_submit': 'Apply',
         'b_form1_clicked': 'b_form1_submit'
     }
-    httpPost('https_config', postdata)
+    httpPost('https_config', post_data)
 
 def saveConfig():
     httpPost('save_config', {})
 
 def reset():
     httpPost('factory_default', {"b_form1_clicked": "b_form1_reset"})
+
+def uploadConfig(filepath):
+    post_data = {
+        'file_type_sel[]': 'config',
+        'orig_file_name': 'hp1820_8G.cfg',
+        'optDSV': '1',
+        'filename': 'hp1820_8G.cfg',
+        'transfer_file': 'hp1820_8G.cfg'
+    }
+    files = {
+        'transfer_file': open(filepath, 'rb')
+    }
+    httpPostFile('file_transfer', post_data, files)
 
 if __name__ == "__main__":
     connect("http", "192.168.1.1")

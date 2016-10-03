@@ -1,8 +1,15 @@
 from cmd import Cmd
 from getpass import getpass
 import cli
-
+import helper
 class Prompt(Cmd):
+    def do_forceexit(self, args):
+        """Quit the program without logout."""
+        raise SystemExit
+
+    def do_EOF(self, args):
+        print("Type exit to quit.")
+
     def do_exit(self, args):
         """Logout current switch and exit."""
         cli.logout()
@@ -86,6 +93,9 @@ class Prompt(Cmd):
 
         if choice == 'y':
             cli.reset()
+
+    def do_uploadconfig(self, args):
+        cli.uploadConfig(input('config file location?(absolute path)'))
 
 prompt = Prompt()
 
