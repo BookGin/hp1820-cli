@@ -27,11 +27,13 @@ if __name__ == "__main__":
 
     # Always try https first! 
     if cli.testConnection('https', host):
+        cli.connect('https', host)
         print("Connect through HTTPS successfully")
         print("Note: This program will NOT verify the SSL certificate.")
     else:
         print("HTTPS failed. Try HTTP...")
         if cli.testConnection('http', host):
+            cli.connect('http', host)
             print("*****************************************")
             print("*Warning: Connect through HTTP protocal.*")
             print("*****************************************")
