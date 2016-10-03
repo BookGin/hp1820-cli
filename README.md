@@ -51,6 +51,15 @@ subnet mask: 255.255.255.0
 gateway address: 
 new_switch#
 ```
+## Install
+
+You may have to install [BeautifulSoup4](https://pypi.python.org/pypi/beautifulsoup4) first.
+
+```
+$ git clone https://github.com/BookGin/hp1820-cli.git
+$ cd hp1820-cli/
+$ ./sshhp admin@192.168.1.1
+```
 
 ## Dependency
 
@@ -58,4 +67,9 @@ new_switch#
 - [requests 2.11.1](https://pypi.python.org/pypi/requests)
 - [BeautifulSoup4 4.5.1](https://pypi.python.org/pypi/beautifulsoup4)
 
+## Unimplemented Features
 
+- [ ] Prettify the information output
+- [ ] Port channel 
+- [ ] Ping Test
+- [ ] Download current config file
