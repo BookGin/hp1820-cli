@@ -3,7 +3,7 @@ import json
 import time
 import re as regex
 from bs4 import BeautifulSoup
-import urllib.request, urllib.error
+import urllib.request, urllib.error, ssl
 
 URLS = {
     'login': '/htdocs/login/login.lua',
@@ -31,17 +31,23 @@ protocal = ""
 host = ""
 session = requests.Session()
 
-def connect(_protocal, _host):
-    url = _protocal + PROTOCAL_DELIMETER + _host
+def testConnection(protocal, host):
+    url = protocal + PROTOCAL_DELIMETER + host
     try:
-        response = urllib.request.urlopen(url, timeout=5)
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+
+        response = urllib.request.urlopen(url, timeout=5, context=ctx)
     except urllib.error.URLError as err:
         print("Cannot connect %s : %s" % (url, err.reason))
         return False
 
+    return True
+
+def connect(_protocal, _host):
     global host, protocal
     protocal, host = _protocal, _host
-    return True
 
 # DEPRECATED: This method uses the same API as showDashboard()
 def getSwitchName():
@@ -76,10 +82,10 @@ def close():
     print('Session closed.')
 
 def httpGet(operation):
-    return session.get(protocal + PROTOCAL_DELIMETER + host + URLS[operation]).text
+    return session.get(protocal + PROTOCAL_DELIMETER + host + URLS[operation], verify=False).text
 
 def httpPost(operation, post_data):
-    return session.post(protocal + PROTOCAL_DELIMETER + host + URLS[operation], post_data).text
+    return session.post(protocal + PROTOCAL_DELIMETER + host + URLS[operation], post_data, verify=False).text
 
 def showDashboard():
     raw_response = httpGet('dashboard')

@@ -18,19 +18,26 @@ def parseArgument():
     else:
         return "admin", sys.argv[1]
 
-def checkConnection(protocal, host):
-    if not cli.connect(protocal, host):
-        print("Cannot connect to remote host %s through %s" % (host, protocal))
-        sys.exit(0)
-
 def execPrompt():
     hpshell.run()
 
 if __name__ == "__main__":
     checkArgument()
     user, host = parseArgument()
-    protocal = "http" # Support http currently, https is future work
-    checkConnection(protocal, host)
+
+    # Always try https first! 
+    if cli.testConnection('https', host):
+        print("Connect through HTTPS successfully")
+        print("Note: This program will NOT verify the SSL certificate.")
+    else:
+        print("HTTPS failed. Try HTTP...")
+        if cli.testConnection('http', host):
+            print("*****************************************")
+            print("*Warning: Connect through HTTP protocal.*")
+            print("*****************************************")
+        else:
+            print("Error: Cannot connect to remote host through HTTP and HTTPS.")
+            sys.exit(0)
 
     wrong_times = 0
     while wrong_times < 3:
