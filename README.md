@@ -6,7 +6,7 @@ HP 1820 J9979A only provide web management interface. This is awkward for networ
 
 ## A Quick View
 ```sh
-$ ./http admin@192.168.1.1
+$ ./sshhp admin@192.168.1.1
 Password: 
 
 Type exit to quit, help for help.
