@@ -1,7 +1,7 @@
 from cmd import Cmd
 from getpass import getpass
-import cli
-import helper
+from lib import cli
+
 class Prompt(Cmd):
     def do_forceexit(self, args):
         """Quit the program without logout."""

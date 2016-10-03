@@ -2,8 +2,8 @@
 import sys
 from getpass import getpass
 
-import cli
-import hpshell
+from lib import cli
+from lib import hpshell
 
 def checkArgument():
     if len(sys.argv) != 2:
