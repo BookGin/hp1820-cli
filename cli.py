@@ -37,6 +37,7 @@ def testConnection(protocal, host):
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
+        requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
         response = urllib.request.urlopen(url, timeout=5, context=ctx)
     except urllib.error.URLError as err:
