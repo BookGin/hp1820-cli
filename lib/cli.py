@@ -92,6 +92,13 @@ def httpPost(operation, post_data):
 def httpPostFile(operation, post_data, files):
     return session.post(protocal + PROTOCAL_DELIMETER + host + URLS[operation], post_data, files = files, verify=False).text
 
+def printTable(th, td)
+    padding = len(max(th, key=len)) + 1
+    row_format = ("{:<%d}" % padding) * (len(th))
+    print(row_format.format(*tr))
+    for row in tds:
+        print(row_format.format(*row))
+
 def showDashboard():
     raw_response = httpGet('dashboard')
     html = BeautifulSoup(raw_response, 'html.parser')
@@ -112,14 +119,14 @@ def showDashboard():
 def showPortStatus():
     raw_response = httpGet('port_status')
     data = parseStatus(raw_response)
-    print(['Interface','Admin Mode','Physical Type','Port Status','Physical Mode','Link Speed','MTU'])
-    print(*data, sep='\n')
+    first_row = ['Interface','Admin Mode','Physical Type','Port Status','Physical Mode','Link Speed','MTU']
+    printTable(first_row, data)
 
 def showMacTable():
     raw_response = httpGet('mac_table')
     data = parseStatus(raw_response, ignore_first = False)
-    print(['VLAN ID', 'MAC Address', 'Interface', 'Interface Index', 'Status'])
-    print(*data, sep='\n')
+    first_row = ['VLAN ID', 'MAC Address', 'Interface', 'Interface Index', 'Status']
+    print(first_row, data)
 
 def parseStatus(raw_response, ignore_first = True):
     string = regex.search('aDataSet = (.*)var aColumns', raw_response.replace('\n', '')).group(1)
@@ -132,8 +139,8 @@ def parseStatus(raw_response, ignore_first = True):
 def showVlanStatus():
     raw_response = httpGet('vlan_status')
     data = parseStatus(raw_response)
-    print(['VLAN ID', 'Name', 'Type'])
-    print(*data, sep='\n')
+    first_row = ['VLAN ID', 'Name', 'Type']
+    printTable(first_row, data)
 
 def setSystemInfo(name, loc, con):
     post_data = {'sys_name': name, 'sys_location': loc, 'sys_contact': con, 'b_form1_submit': 'Apply', 'b_form1_clicked': 'b_form1_submit'}
@@ -231,13 +238,14 @@ def accessVlan(mode, interfaces, vlan_id):
 def showVlanPort():
     raw_response = httpGet('all_config')
     html = BeautifulSoup(raw_response, 'html.parser')
-    print("VLAN ID / Tagged Ports  /  Untagged Ports / Exclude Participation")
+    first_row = ['VLAN ID', 'Tagged Ports', 'Untagged Ports', 'Exclude Participation']
+    data = []
     for table in html.find_all("table"):
         if table["id"] != "sorttable12":
             continue
         for row in table.find_all("tr"):
-            [print(col.get_text(), end="   /") for col in row.find_all("td")]
-            print()
+            data.append([col.get_text() for col in row.find_all("td")])
+    printTable(first_row, data)
 
 def genCert():
     post_data = {
