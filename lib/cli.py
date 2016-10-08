@@ -16,6 +16,7 @@ URLS = {
     'all_config': '/htdocs/pages/base/support.lsp',
     'port_status': '/htdocs/pages/base/port_summary.lsp?tg=switch_port_config&showtab=1',
     'vlan_status': '/htdocs/pages/switching/vlan_status.lsp',
+    'port_statistic': '/htdocs/pages/base/port_summary_stats.lsp',
     'add_vlan': '/htdocs/pages/switching/vlan_status_modal.lsp',
     'del_vlan': '/htdocs/pages/switching/vlan_status.lsp',
     'access_vlan': '/htdocs/pages/switching/vlan_per_port_modal.lsp',
@@ -146,6 +147,13 @@ def showVlanStatus():
     data = parseStatus(raw_response)
     first_row = ['VLAN ID', 'Name', 'Type']
     printTable(first_row, data)
+
+def showPortStatistic():
+    raw_response = httpGet('port_statistic')
+    data = parseStatus(raw_response, ignore_first = False)
+    first_row = ['Int','RX w/o Err','RX with Err','RX Broadcast','TX w/o Err','TX with Err','Collision','TX PauseFrame','RX PauseFrame']
+    printTable(first_row, data)
+
 
 def setSystemInfo(name, loc, con):
     post_data = {'sys_name': name, 'sys_location': loc, 'sys_contact': con, 'b_form1_submit': 'Apply', 'b_form1_clicked': 'b_form1_submit'}

@@ -9,7 +9,9 @@ class Prompt(Cmd):
 
     def do_EOF(self, args):
         """Logout current switch and exit."""
-        print("Type exit to quit.")
+        cli.logout()
+        cli.close()
+        raise SystemExit
 
     def do_exit(self, args):
         """Logout current switch and exit."""
@@ -20,6 +22,10 @@ class Prompt(Cmd):
     def do_showrun(self, args):
         """Show switch dashboard information."""
         cli.showDashboard()
+
+    def do_showintstat(self, args):
+        """Show port packet statistics."""
+        cli.showPortStatistic()
 
     def do_showint(self, args):
         """Show interfaces status."""
@@ -138,7 +144,7 @@ def run():
     prompt.prompt = '%s#' % cli.getSwitchName()
     while True:
         try:
-            prompt.cmdloop('Type exit to quit, help for help.')
+            prompt.cmdloop('Type exit/forceexit to quit, help for help.')
         except KeyboardInterrupt:
             pass
         #except Exception as e:
