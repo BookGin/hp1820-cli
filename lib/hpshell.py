@@ -68,11 +68,11 @@ class Prompt(Cmd):
 
     def do_vlanadd(self, args):
         """Add a new vlan interface."""
-        cli.addVlan(input("Add vlan id (2 to 4093)?"))
+        cli.addVlan(input("'-' to specify a range and ',' to separate VLAN ID\nAdd vlan id (2 to 4093)? "))
 
     def do_vlandel(self, args):
         """Delete a new vlan interface."""
-        cli.delVlan(input("Delete vlan id (2 to 4093)?"))
+        cli.delVlan(input("'-' to specify a range and ',' to separate VLAN ID\nDelete vlan id (2 to 4093)? "))
 
     def do_vlanset(self, args):
         """Set interfaces vlan membership."""
@@ -98,16 +98,31 @@ class Prompt(Cmd):
 
     def do_reset(self, args):
         """Restore to factory configuration."""
+        print("Note: After resetting, you have to save configuration to apply factory default when rebooting.")
         choice = input("Restore to factory configuration?(y/n)")
         while choice not in "yn":
             choice = input("Restore to factory configuration?(y/n)")
-
         if choice == 'y':
             cli.reset()
 
     def do_uploadconfig(self, args):
         """Upload a config file to switch."""
         cli.uploadConfig(input('config file location?(absolute path)'))
+
+    def do_setportchannel(self, args):
+        """Configure port channel settings."""
+        available_mode = {'y':'enabled', 'n':'disabled'}
+        stp_mode = input("stp_mode (y/n)?")
+        while stp_mode not in available_mode:
+            stp_mode = input("stp_mode (y/n)?")
+        static_mode = input("static_mode (y/n)?")
+        while static_mode not in available_mode:
+            static_mode = input("static_mode (y/n)?")
+        cli.setPortChannel(input("channel id (1-4)? "), input("member interface ?"), 'enabled', stp_mode, static_mode)
+
+    def do_clearportchannel(self, args):
+        """Clear port channel settings."""
+        cli.setPortChannel(input("channel id (1-4)? "), '', 'enabled', 'enabled', 'enabled', clear=True)
 
 prompt = Prompt()
 
@@ -118,7 +133,7 @@ def run():
             prompt.cmdloop('Type exit to quit, help for help.')
         except KeyboardInterrupt:
             pass
-        except Exception as e:
-            print("An error occured: " + e)
-            print("Maybe the session is timeout?")
-            raise SystemExit
+        #except Exception as e:
+        #    print("An error occured: " + str(e))
+        #    print("Maybe the session is timeout?")
+        #    raise SystemExit

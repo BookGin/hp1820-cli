@@ -20,6 +20,7 @@ URLS = {
     'del_vlan': '/htdocs/pages/switching/vlan_status.lsp',
     'access_vlan': '/htdocs/pages/switching/vlan_per_port_modal.lsp',
     'set_sysinfo': '/htdocs/pages/base/dashboard.lsp',
+    'set_port_channel': '/htdocs/pages/switching/port_channel_modal.lsp',
     'set_network': '/htdocs/pages/base/network_ipv4_cfg.lsp',
     'set_timezone': '/htdocs/pages/base/timezone_cfg.lsp',
     'set_sntp': '/htdocs/pages/base/sntp_global_config.lsp',
@@ -27,6 +28,7 @@ URLS = {
     'cert_state': '/htdocs/lua/ajax/https_cert_stat_ajax.lua',
     'https_config': '/htdocs/pages/base/https_cfg.lsp'
 }
+
 PROTOCAL_DELIMETER = "://"
 protocal = ""
 host = ""
@@ -92,11 +94,13 @@ def httpPost(operation, post_data):
 def httpPostFile(operation, post_data, files):
     return session.post(protocal + PROTOCAL_DELIMETER + host + URLS[operation], post_data, files = files, verify=False).text
 
-def printTable(th, td)
+def printTable(th, tds):
     padding = len(max(th, key=len)) + 1
     row_format = ("{:<%d}" % padding) * (len(th))
-    print(row_format.format(*tr))
+    print(row_format.format(*th))
     for row in tds:
+        if len(row) == 0: 
+            continue
         print(row_format.format(*row))
 
 def showDashboard():
@@ -206,35 +210,6 @@ def setSntp(sntp_ip):
     }
     httpPost('set_sntp', post_data)
 
-def addVlan(vlan_id_range):
-    post_data = {
-        'vlan_id_range': vlan_id_range,
-        'vlancount': '1',
-        'b_modal1_clicked': 'b_modal1_submit'
-    }
-    httpPost('add_vlan', post_data)
-
-def delVlan(vlan_id):
-    #TODO: delete Multiple vlan, but this is a dict, chkrow[] cannot have multi value
-    post_data = {
-        'sorttable1_length': '-1',
-        'chkrow[]': vlan_id,
-        #'chkrow[]': '11',
-        'b_form1_clicked': 'b_form1_dt_remove'
-    }
-    httpPost('del_vlan', post_data)
-
-def accessVlan(mode, interfaces, vlan_id):
-    post_data = {
-        'part_tagg_sel[]': mode, # tagged, untagged, exclude
-        'vlan': vlan_id,
-        'intfStr': interfaces, # 5,6,7,8
-        'part_exclude': 'yes',
-        'parentQStr': '?vlan=%s' % vlan_id, # looks like this doesn't matter
-        'b_modal1_clicked': 'b_modal1_submit'
-    }
-    httpPost('access_vlan', post_data)
-
 def showVlanPort():
     raw_response = httpGet('all_config')
     html = BeautifulSoup(raw_response, 'html.parser')
@@ -247,6 +222,37 @@ def showVlanPort():
             data.append([col.get_text() for col in row.find_all("td")])
     printTable(first_row, data)
 
+def accessVlan(mode, interfaces, vlan_id):
+    post_data = {
+        'part_tagg_sel[]': mode, # tagged, untagged, exclude
+        'vlan': vlan_id,
+        'intfStr': interfaces, # 5,6,7,8
+        'part_exclude': 'yes',
+        'parentQStr': '?vlan=%s' % vlan_id, # looks like this doesn't matter
+        'b_modal1_clicked': 'b_modal1_submit'
+    }
+    httpPost('access_vlan', post_data)
+
+# @param example: 5-18 or 7 or 1,4,7
+def addVlan(vlan_id_str):
+    post_data = {
+        'vlan_id_range': vlan_id_str,
+        'vlancount': '1',
+        'b_modal1_clicked': 'b_modal1_submit'
+    }
+    httpPost('add_vlan', post_data)
+
+# @param example: 5-18 or 7 or 1,4,7
+def delVlan(vlan_id_str):
+    vlan_ids = parseIds(vlan_id_str)
+    post_data = {
+        'sorttable1_length': '-1',
+        'chkrow[]': vlan_ids,
+        'b_form1_clicked': 'b_form1_dt_remove'
+    }
+    httpPost('del_vlan', post_data)
+
+# Generate https SSL certificate.
 def genCert():
     post_data = {
         'http_mode_sel[]': 'enabled',
@@ -260,6 +266,8 @@ def genCert():
     while httpGet('cert_state') != 'Present':
         time.sleep(1)
 
+# set the management interface
+# @param "enabled", "disabled"
 def setHttps(http, https):
     post_data = {
         'http_mode_sel[]': http,
@@ -278,6 +286,7 @@ def saveConfig():
 def reset():
     httpPost('factory_default', {"b_form1_clicked": "b_form1_reset"})
 
+# Upload config file. The filename should be hp1820_8G.cfg. Other names are deprecated.
 def uploadConfig(filepath):
     post_data = {
         'file_type_sel[]': 'config',
@@ -286,10 +295,44 @@ def uploadConfig(filepath):
         'filename': 'hp1820_8G.cfg',
         'transfer_file': 'hp1820_8G.cfg'
     }
-    files = {
-        'transfer_file': open(filepath, 'rb')
-    }
+    files = {'transfer_file': open(filepath, 'rb')}
     httpPostFile('file_transfer', post_data, files)
+
+def setPortChannel(channel_id, interface_id_str, admin_mode, stp_mode, static_mode, clear = False):
+    interface_ids = parseIds(interface_id_str)
+    not_interface_ids = [i for i in range(1, 8 + 1) if i not in interface_ids]
+    dstPortList = ''
+    post_data = {
+        'trunk_intf': str(54 + int(channel_id) - 1),
+        'trunk_name_input': 'TRK%s' % channel_id,
+        'admin_mode_sel[]': admin_mode,
+        'stp_mode_sel[]': stp_mode,
+        'static_mode_sel[]': static_mode,
+        'dot3adhash_sel[]': 'sda_vlan',
+        'member_assoc_sel[]': not_interface_ids,
+        'member_assoc_sel_selected[]': interface_ids,
+        'dstPortList': dstPortList,
+        'b_modal1_clicked': 'b_modal1_submit'
+    }
+    if interface_ids:
+        post_data['member_assoc_sel_selected[]'] = interface_ids
+
+    if not clear:
+        httpPost('set_port_channel', post_data)
+        return
+    post_data['dstPortList'] = '1,2,3,4,5,6,7,8'
+    print(post_data)
+    httpPost('set_port_channel', post_data)
+
+def parseIds(id_str):
+    if not id_str:
+        return []
+    if '-' in id_str:
+        start, end = [int(i) for i in id_str.split('-')]
+        ids = list(range(start, end + 1))
+    else:
+        ids = [int(i) for i in id_str.split(',')]
+    return ids
 
 if __name__ == "__main__":
     connect("http", "192.168.1.1")
@@ -313,4 +356,3 @@ if __name__ == "__main__":
         print(e)
         logout()
         session.close()
-
