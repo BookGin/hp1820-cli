@@ -32,9 +32,12 @@ class Prompt(Cmd):
         cli.showPortStatus()
 
     def do_showvlan(self, args):
-        """Show VLAN status."""
-        cli.showVlanStatus()
+        """Show interface VLAN membership."""
         cli.showVlanPort()
+
+    def do_showvlanid(self, args):
+        """Show VLAN id status."""
+        cli.showVlanStatus()
 
     def do_showmac(self, args):
         """Show mac address table."""
