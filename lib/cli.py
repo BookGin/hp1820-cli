@@ -317,11 +317,9 @@ def setPortChannel(channel_id, interface_id_str, admin_mode, stp_mode, static_mo
     if interface_ids:
         post_data['member_assoc_sel_selected[]'] = interface_ids
 
-    if not clear:
-        httpPost('set_port_channel', post_data)
-        return
-    post_data['dstPortList'] = '1,2,3,4,5,6,7,8'
-    print(post_data)
+    if clear:
+        post_data['dstPortList'] = '1,2,3,4,5,6,7,8'
+
     httpPost('set_port_channel', post_data)
 
 def parseIds(id_str):
