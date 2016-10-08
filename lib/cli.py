@@ -19,6 +19,7 @@ URLS = {
     'add_vlan': '/htdocs/pages/switching/vlan_status_modal.lsp',
     'del_vlan': '/htdocs/pages/switching/vlan_status.lsp',
     'access_vlan': '/htdocs/pages/switching/vlan_per_port_modal.lsp',
+    'set_port_status': '/htdocs/pages/base/port_summary_modal.lsp',
     'set_sysinfo': '/htdocs/pages/base/dashboard.lsp',
     'set_port_channel': '/htdocs/pages/switching/port_channel_modal.lsp',
     'set_network': '/htdocs/pages/base/network_ipv4_cfg.lsp',
@@ -130,7 +131,7 @@ def showMacTable():
     raw_response = httpGet('mac_table')
     data = parseStatus(raw_response, ignore_first = False)
     first_row = ['VLAN ID', 'MAC Address', 'Interface', 'Interface Index', 'Status']
-    print(first_row, data)
+    printTable(first_row, data)
 
 def parseStatus(raw_response, ignore_first = True):
     string = regex.search('aDataSet = (.*)var aColumns', raw_response.replace('\n', '')).group(1)
@@ -226,7 +227,7 @@ def accessVlan(mode, interfaces, vlan_id):
     post_data = {
         'part_tagg_sel[]': mode, # tagged, untagged, exclude
         'vlan': vlan_id,
-        'intfStr': interfaces, # 5,6,7,8
+        'intfStr': interfaces, # 1-8, TRK1: 54, TRK2: 55 ...
         'part_exclude': 'yes',
         'parentQStr': '?vlan=%s' % vlan_id, # looks like this doesn't matter
         'b_modal1_clicked': 'b_modal1_submit'
@@ -298,12 +299,22 @@ def uploadConfig(filepath):
     files = {'transfer_file': open(filepath, 'rb')}
     httpPostFile('file_transfer', post_data, files)
 
+def setPortStatus(interface, status):
+    post_data = {
+        'admin_mode_sel[]': status, # enabled, disabled
+        'phys_mode_sel[]': '1',
+        'port_desc': 'port_descr',
+        'intf': interface,
+        'b_modal1_clicked': 'b_modal1_submit'
+    }
+    httpPost('set_port_status', post_data)
+
 def setPortChannel(channel_id, interface_id_str, admin_mode, stp_mode, static_mode, clear = False):
     interface_ids = parseIds(interface_id_str)
     not_interface_ids = [i for i in range(1, 8 + 1) if i not in interface_ids]
     dstPortList = ''
     post_data = {
-        'trunk_intf': str(54 + int(channel_id) - 1),
+        'trunk_intf': str(53 + int(channel_id)),
         'trunk_name_input': 'TRK%s' % channel_id,
         'admin_mode_sel[]': admin_mode,
         'stp_mode_sel[]': stp_mode,
@@ -331,6 +342,8 @@ def parseIds(id_str):
     else:
         ids = [int(i) for i in id_str.split(',')]
     return ids
+
+
 
 if __name__ == "__main__":
     connect("http", "192.168.1.1")

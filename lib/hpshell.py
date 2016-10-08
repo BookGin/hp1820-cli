@@ -80,7 +80,7 @@ class Prompt(Cmd):
         mode = input("tagged[t]/untagged[u]/exclude[e]?")
         while mode not in available_mode:
             mode = input("tagged[t]/untagged[u]/exclude[e]?")
-        cli.accessVlan(available_mode[mode], input("Interfaces(1-8)?"), input("Vlan id?"))
+        cli.accessVlan(available_mode[mode], input("Interfaces(1-8), TRK1-4 (54-57)?"), input("Vlan id?"))
 
     def do_gencert(self, args):
         """Generate a new self-signed SSL certificate."""
@@ -123,6 +123,14 @@ class Prompt(Cmd):
     def do_clearportchannel(self, args):
         """Clear port channel settings."""
         cli.setPortChannel(input("channel id (1-4)? "), '', 'enabled', 'enabled', 'enabled', clear=True)
+
+    def do_setportstatus(self, args):
+        """Enable or disable ports."""
+        available_mode = {'e':'enabled', 'd':'disabled'}
+        mode = input("enable or disable a port(e/d)?")
+        while mode not in available_mode:
+            mode = input("enable or disable a port(e/d)?")
+        cli.setPortStatus(input("Interfaces(1-8), TRK1-4 (54-57)?"), mode)
 
 prompt = Prompt()
 
