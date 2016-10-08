@@ -70,6 +70,6 @@ $ ./sshhp admin@192.168.1.1
 ## Unimplemented Features
 
 - [x] Prettify the information output
-- [ ] Port channel 
-- [ ] Ping Test
-- [ ] Download current config file
+- [x] Port channel 
+- [ ] Ping Test (Need to handle jsvascript)
+- [ ] Download current config file (Need to handle javascript)
