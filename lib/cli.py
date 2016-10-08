@@ -350,28 +350,3 @@ def parseIds(id_str):
     else:
         ids = [int(i) for i in id_str.split(',')]
     return ids
-
-
-
-if __name__ == "__main__":
-    connect("http", "192.168.1.1")
-    login("admin", "password")
-    try:
-        showMacTable()
-        showDashboard()
-        showPortStatus()
-        showVlanStatus()
-        setSystemInfo("SwitchName", "Location", "Contact")
-        #setNetwork()
-        addVlan("9-11")
-        showVlanStatus()
-        showVlanPort()
-        delVlan("10")
-        accessVlan("untagged", "5,6,7,8", "11") # interfaces, vlan id
-        #setAccount("admin", "password", "password", "password")
-        logout()
-        session.close()
-    except Exception as e:
-        print(e)
-        logout()
-        session.close()
