@@ -31,6 +31,10 @@ class Prompt(Cmd):
         """Show interfaces status."""
         cli.showPortStatus()
 
+    def do_showportchannel(self, args):
+        """Show port channel information."""
+        cli.showPortChannel()
+
     def do_showvlan(self, args):
         """Show interface VLAN membership."""
         cli.showVlanPort()

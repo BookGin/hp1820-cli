@@ -13,6 +13,7 @@ URLS = {
     'file_transfer': '/htdocs/lua/ajax/file_download_ajax.lua?protocol=6',
     'dashboard': '/htdocs/pages/base/dashboard.lsp',
     'mac_table': '/htdocs/pages/base/mac_address_table.lsp',
+    'port_channel': '/htdocs/pages/switching/port_channel_summary.lsp',
     'all_config': '/htdocs/pages/base/support.lsp',
     'port_status': '/htdocs/pages/base/port_summary.lsp?tg=switch_port_config&showtab=1',
     'vlan_status': '/htdocs/pages/switching/vlan_status.lsp',
@@ -126,6 +127,12 @@ def showPortStatus():
     raw_response = httpGet('port_status')
     data = parseStatus(raw_response)
     first_row = ['Interface','Admin Mode','Physical Type','Port Status','Physical Mode','Link Speed','MTU']
+    printTable(first_row, data)
+
+def showPortChannel():
+    raw_response = httpGet('port_channel')
+    data = parseStatus(raw_response)
+    first_row = ['Interface', 'Name', 'Type', 'Admin Mode', 'Link Status', 'Members', 'Active Ports']
     printTable(first_row, data)
 
 def showMacTable():
