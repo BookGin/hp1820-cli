@@ -2,7 +2,7 @@
 import sys
 from getpass import getpass
 
-from lib import cli
+from lib.cli import Cli
 from lib import hpshell
 
 def checkArgument():
@@ -18,22 +18,22 @@ def parseArgument():
     else:
         return "admin", sys.argv[1]
 
-def execPrompt():
-    hpshell.run()
+def execPrompt(cli):
+    hpshell.run(cli)
 
 if __name__ == "__main__":
     checkArgument()
     user, host = parseArgument()
 
-    # Always try https first! 
-    if cli.testConnection('https', host):
-        cli.connect('https', host)
+    # Always try https first!
+    if Cli.testConnection('https', host):
+        cli = Cli('https', host)
         print("Connect through HTTPS successfully")
         print("Note: This program will NOT verify the SSL certificate.")
     else:
         print("HTTPS failed. Try HTTP...")
-        if cli.testConnection('http', host):
-            cli.connect('http', host)
+        if Cli.testConnection('http', host):
+            cli = Cli('http', host)
             print("*****************************************")
             print("*Warning: Connect through HTTP protocal.*")
             print("*****************************************")
@@ -52,4 +52,4 @@ if __name__ == "__main__":
         print("3 incorrect password attempts")
         sys.exit(0)
 
-    execPrompt()
+    execPrompt(cli)

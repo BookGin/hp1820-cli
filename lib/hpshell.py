@@ -37,7 +37,7 @@ class Prompt(Cmd):
 
     def do_showvlan(self, args):
         """Show interface VLAN membership."""
-        cli.showVlanPort()
+        cli.showVlanMembership()
 
     def do_showvlanid(self, args):
         """Show VLAN id status."""
@@ -75,7 +75,7 @@ class Prompt(Cmd):
 
     def do_settime(self, args):
         """Set SNTP server IP and timezone (support GMT+8 TPE only)."""
-        cli.setTimezone()
+        cli.setTimezoneTaipei()
         print("Automatically set timezone to GMT+8(TPE) successfully.")
         cli.setSntp(input("SNTP IP address: "))
 
@@ -146,8 +146,11 @@ class Prompt(Cmd):
         cli.setPortStatus(input("Interfaces(1-8), TRK1-4 (54-57)?"), mode)
 
 prompt = Prompt()
+cli = None
 
-def run():
+def run(_cli):
+    global cli
+    cli = _cli
     prompt.prompt = '%s#' % cli.getSwitchName()
     while True:
         try:
