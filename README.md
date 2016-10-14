@@ -73,3 +73,7 @@ $ ./sshhp admin@192.168.1.1
 
 - [Getting Started Guide](http://h20564.www2.hpe.com/hpsc/doc/public/display?docId=c04622696)
 - [Management and Configuration Guide](http://h20566.www2.hpe.com/hpsc/doc/public/display?sp4ts.oid=7687976&docId=emr_na-c04622710&docLocale=en_US)
+
+## License
+
+The MIT License
