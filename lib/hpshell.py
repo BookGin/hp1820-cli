@@ -143,7 +143,7 @@ class Prompt(Cmd):
         mode = input("enable or disable a port(e/d)?")
         while mode not in available_mode:
             mode = input("enable or disable a port(e/d)?")
-        cli.setPortStatus(input("Interfaces(1-8), TRK1-4 (54-57)?"), mode)
+        cli.setPortStatus(input("Interfaces(1-8), TRK1-4 (54-57)?"), available_mode[mode])
 
 prompt = Prompt()
 cli = None

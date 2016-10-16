@@ -240,7 +240,7 @@ class Cli:
         post_data = {
             'admin_mode_sel[]': status, # enabled, disabled
             'phys_mode_sel[]': '1',
-            'port_desc': 'port_descr',
+            'port_desc': '',
             'intf': interface,
             'b_modal1_clicked': 'b_modal1_submit'
         }
