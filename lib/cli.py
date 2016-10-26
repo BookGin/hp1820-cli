@@ -131,15 +131,13 @@ class Cli:
             'b_form1_submit': 'Apply',
             'b_form1_clicked': 'b_form1_submit'
         }
+        post_data = {}
+        post_data.update(required_data)
+
         if mode == "static":
-            ip_data = {
-                'ip_addr': ip,
-                'subnet_mask': subnet,
-                'gateway_address': gateway
-            }
-            post_data = {**ip_data,  **required_data}
-        else:
-            post_data = required_data
+            ip_data = {'ip_addr': ip, 'subnet_mask': subnet, 'gateway_address': gateway}
+            post_data.update(ip_data)
+
         self._httpPost('set_network', post_data)
 
     def setAccount(self, username, old_pwd, new_pwd, confirm_new_passwd):
