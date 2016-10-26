@@ -65,9 +65,11 @@ $ ./sshhp admin@192.168.1.1
 ## Unimplemented Features
 
 - [x] Port channel 
+- [ ] Reboot switch
 - [ ] Prettify the information output
 - [ ] Ping Test (Need to handle jsvascript)
 - [ ] Download current config file (Need to handle javascript)
+- [ ] Compatible with Python 3.4.2 due to [this issue](http://stackoverflow.com/questions/28575070/urllib-not-taking-context-as-a-parameter)
 
 ## Official Manual
 
