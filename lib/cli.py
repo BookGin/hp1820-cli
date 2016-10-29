@@ -291,7 +291,7 @@ class Cli:
         soup = BeautifulSoup(response, 'html.parser')
         handle = int(soup.select('#handle')[0]['value'])
         print('Pinging ' + ipAddr + ' with ' + str(size) + ' bytes of data:')
-        
+
         self.seq = -1
         self.done = 0
         self.count = count
@@ -299,11 +299,25 @@ class Cli:
         self.probefail = 1
         while self.done == 0:
             time.sleep(0.15)
-            self.ping_ajax(str(handle), ipAddr)
+            self._ping_ajax(str(handle), ipAddr)
 
+
+    # private method
+
+    def _httpGet(self, operation, handle = ''):
+        return httpRequest(self.session, 'GET', self._getUrl(operation)+handle)
+
+    def _httpPost(self, operation, post_data):
+        return httpRequest(self.session, 'POST', self._getUrl(operation), post_data)
+
+    def _httpPostFile(self, operation, post_data, files):
+        return httpRequest(self.session, 'POST', self._getUrl(operation), post_data, files)
+
+    def _getUrl(self, operation):
+        return self.protocol + PROTOCAL_DELIMETER + self.host + URLS[operation]
 
     # This function is simply a translation of JS code
-    def ping_ajax(self, handle_val, host_name_ipaddr):
+    def _ping_ajax(self, handle_val, host_name_ipaddr):
         res = self._httpGet('ping_ajax', handle_val)
         res = res.split('|')
         if res is not None:
@@ -354,22 +368,6 @@ class Cli:
                 self.probessent = probesent
                 self.seq = seq
 
-
-                
-
-    # private method
-
-    def _httpGet(self, operation, handle = ''):
-        return httpRequest(self.session, 'GET', self._getUrl(operation)+handle)
-
-    def _httpPost(self, operation, post_data):
-        return httpRequest(self.session, 'POST', self._getUrl(operation), post_data)
-
-    def _httpPostFile(self, operation, post_data, files):
-        return httpRequest(self.session, 'POST', self._getUrl(operation), post_data, files)
-
-    def _getUrl(self, operation):
-        return self.protocol + PROTOCAL_DELIMETER + self.host + URLS[operation]
 
 URLS = {
     'login': '/htdocs/login/login.lua',
