@@ -145,6 +145,12 @@ class Prompt(Cmd):
             mode = input("enable or disable a port(e/d)?")
         cli.setPortStatus(input("Interfaces(1-8), TRK1-4 (54-57)?"), available_mode[mode])
 
+    def do_ping(self, args):
+        """Ping an IP through the switch"""
+        ipAddr, count, interval, size = input("IP address: "), input("Count (1-15): "), input("Interval (1-60 Seconds): "), input("Size (0-13000Bytes): ")
+        cli.ping(ipAddr, count, interval, size)
+
+
 prompt = Prompt()
 cli = None
 

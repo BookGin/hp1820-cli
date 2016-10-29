@@ -4,6 +4,8 @@ import time
 import re as regex
 from bs4 import BeautifulSoup
 import urllib.request, urllib.error, ssl
+from math import isnan
+import threading
 
 class Cli:
     def __init__(self, protocol, host):
@@ -268,10 +270,97 @@ class Cli:
 
         self._httpPost('set_port_channel', post_data)
 
+    def ping(self, ipAddr, count, interval, size):
+        handle = 0
+
+        post_data = {
+            'handle': handle,
+            'host_name_ipaddr': ipAddr,
+            'count': count,
+            'interval': interval,
+            'size': size,
+            'probessent': 1,
+            'probefail': 1,
+            'seq': -1,
+            'done': 0,
+            'stop_results': 0,
+            'b_form1_clicked': 'b_form1_submit',
+        }
+
+        response = self._httpPost('ping', post_data)
+        soup = BeautifulSoup(response, 'html.parser')
+        handle = int(soup.select('#handle')[0]['value'])
+        print('Pinging ' + ipAddr + ' with ' + str(size) + ' bytes of data:')
+        
+        self.seq = -1
+        self.done = 0
+        self.count = count
+        self.probessent = 1
+        self.probefail = 1
+        while self.done == 0:
+            time.sleep(0.15)
+            self.ping_ajax(str(handle), ipAddr)
+
+
+    # This function is simply a translation of JS code
+    def ping_ajax(self, handle_val, host_name_ipaddr):
+        res = self._httpGet('ping_ajax', handle_val)
+        res = res.split('|')
+        if res is not None:
+            handle = int(res[0]);
+            respip = res[1];
+            rtt = int(res[2]);
+            seq = int(res[3]);
+            resptype = int(res[4]);
+            operstatus = int(res[5]);
+            sessionstate = int(res[6]);
+            avgrtt = int(res[7]);
+            maxrtt = int(res[8]);
+            minrtt = int(res[9]);
+            probesent = int(res[10]);
+            proberesponse = int(res[11]);
+            probefail = int(res[12]);
+            
+            if (not isnan(handle)) and handle != 0:
+                results = ''
+                if respip != host_name_ipaddr and respip != '0.0.0.0':
+                    results = 'Reply from ' + respip + ': Destination Port Unreachable.'
+                elif respip == host_name_ipaddr:
+                    results = 'Reply from ' + respip + ': icmp_seq=' + str(seq) + ' time=' + str(rtt) + ' usec.'
+                else:
+                    results = 'Request Timed Out.'
+                if probesent == self.count:
+                    self.done = 1
+                
+                if respip != '' and seq != self.seq:
+                    print(results)
+                elif respip != '0.0.0.0' and respip != host_name_ipaddr and self.probessent < probesent:
+                    print(results)
+                elif probefail > 0 and self.probefail < probefail and self.probessent < probesent:
+                    self.probefail = probefail
+                    print('Request Timed Out.')
+                if probesent == 0:
+                    self.done = 1
+
+                if operstatus == 0:
+                    if self.done == 0:
+                        self.done = 1
+                        percent = 0
+                        if probesent != 0:
+                            percent = (probesent - proberesponse) * 100 / float(probesent)
+                            print('---' + host_name_ipaddr + ' ping statistics----')
+                            print(str(probesent) + ' packets transmitted, ' + str(proberesponse) + ' packets received, ' + str(percent) + '% packet loss')
+                            print('round-trip (msec) min/avg/max = ' + str(minrtt) + '/' + str(avgrtt) + '/' + str(maxrtt))
+                self.probessent = probesent
+                self.seq = seq
+
+
+                
+
     # private method
 
-    def _httpGet(self, operation):
-        return httpRequest(self.session, 'GET', self._getUrl(operation))
+    def _httpGet(self, operation, handle = ''):
+        return httpRequest(self.session, 'GET', self._getUrl(operation)+handle)
 
     def _httpPost(self, operation, post_data):
         return httpRequest(self.session, 'POST', self._getUrl(operation), post_data)
@@ -306,7 +395,9 @@ URLS = {
     'set_sntp': '/htdocs/pages/base/sntp_global_config.lsp',
     'set_account': '/htdocs/pages/base/user_accounts.lsp',
     'cert_state': '/htdocs/lua/ajax/https_cert_stat_ajax.lua',
-    'https_config': '/htdocs/pages/base/https_cfg.lsp'
+    'https_config': '/htdocs/pages/base/https_cfg.lsp',
+    'ping': '/htdocs/pages/base/ping.lsp',
+    'ping_ajax': '/htdocs/lua/ajax/ping_ajax.lua?handle='
 }
 
 PROTOCAL_DELIMETER = "://"
