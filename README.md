@@ -65,9 +65,9 @@ $ ./sshhp admin@192.168.1.1
 ## Unimplemented Features
 
 - [x] Port channel 
+- [x] Ping Test (Need to handle javascript)
 - [ ] Reboot switch
 - [ ] Prettify the information output
-- [ ] Ping Test (Need to handle jsvascript)
 - [ ] Download current config file (Need to handle javascript)
 - [ ] Compatible with Python 3.4.2 due to [this issue](http://stackoverflow.com/questions/28575070/urllib-not-taking-context-as-a-parameter)
 
@@ -75,6 +75,7 @@ $ ./sshhp admin@192.168.1.1
 
 - [Getting Started Guide](http://h20564.www2.hpe.com/hpsc/doc/public/display?docId=c04622696)
 - [Management and Configuration Guide](http://h20566.www2.hpe.com/hpsc/doc/public/display?sp4ts.oid=7687976&docId=emr_na-c04622710&docLocale=en_US)
+- [Firmware and MIB (for SNMP)](https://h10145.www1.hp.com/downloads/SoftwareReleases.aspx?ProductNumber=J9979A)
 
 ## License
 
