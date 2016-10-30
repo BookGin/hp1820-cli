@@ -236,6 +236,24 @@ class Cli:
         files = {'transfer_file': open(filepath, 'rb')}
         self._httpPostFile('file_transfer', post_data, files)
 
+    def downloadConfig(self, filepath):
+        nowtime = int(1000 * time.time())
+        post_data = {
+            'file_type_sel[]': 'config',
+            'http_token': nowtime
+        }
+        response = self._httpPost('file_upload', post_data)
+        download_file = self._httpGet('file_download','?name=hp1820_8G.cfg&file=/mnt/download/hp1820_8G.cfg&token='+str(nowtime))
+        try:
+            f = open(filepath+'/hp1820_8G.cfg','w+')
+            print('file downloaded to '+filepath+'/hp1820_8G.cfg')
+            f.write(download_file)
+        except PermissionError:
+            print('permission denied.')
+        except:
+            print('error')
+        self._httpGet('file_download','?name=hp1820_8G.cfg&file=/mnt/download/hp1820_8G.cfg&token='+str(nowtime)+'&remove=true')
+
     def setPortStatus(self, interface, status):
         post_data = {
             'admin_mode_sel[]': status, # enabled, disabled
@@ -395,7 +413,9 @@ URLS = {
     'cert_state': '/htdocs/lua/ajax/https_cert_stat_ajax.lua',
     'https_config': '/htdocs/pages/base/https_cfg.lsp',
     'ping': '/htdocs/pages/base/ping.lsp',
-    'ping_ajax': '/htdocs/lua/ajax/ping_ajax.lua?handle='
+    'ping_ajax': '/htdocs/lua/ajax/ping_ajax.lua?handle=',
+    'file_upload': '/htdocs/lua/ajax/file_upload_ajax.lua?protocol=6',
+    'file_download': '/htdocs/pages/base/file_http_download.lsp'
 }
 
 PROTOCAL_DELIMETER = "://"

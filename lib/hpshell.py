@@ -122,6 +122,10 @@ class Prompt(Cmd):
         """Upload a config file to switch."""
         cli.uploadConfig(input('config file location?(absolute path)'))
 
+    def do_downloadconfig(self, args):
+        """Download a config file to local."""
+        cli.downloadConfig(input('where to put the config file?(absolute path)'))
+
     def do_setportchannel(self, args):
         """Configure port channel settings."""
         available_mode = {'y':'enabled', 'n':'disabled'}
@@ -149,6 +153,8 @@ class Prompt(Cmd):
         """Ping an IP through the switch"""
         ipAddr, count, interval, size = input("IP address: "), input("Count (1-15): "), input("Interval (1-60 Seconds): "), input("Size (0-13000Bytes): ")
         cli.ping(ipAddr, count, interval, size)
+
+
 
 
 prompt = Prompt()
