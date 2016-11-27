@@ -135,7 +135,7 @@ class Prompt(Cmd):
         static_mode = input("static_mode (y/n)?")
         while static_mode not in available_mode:
             static_mode = input("static_mode (y/n)?")
-        cli.setPortChannel(input("channel id (1-4)? "), input("member interface ?"), 'enabled', stp_mode, static_mode)
+        cli.setPortChannel(input("channel id (1-4)? "), input("member interface (ex. 1,5)?"), 'enabled', stp_mode, static_mode)
 
     def do_clearportchannel(self, args):
         """Clear port channel settings."""
