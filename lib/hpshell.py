@@ -126,6 +126,10 @@ class Prompt(Cmd):
         """Upload a firmware file to switch."""
         cli.uploadCode(input('Code file location?(absolute path)'))
 
+    def do_activatecode(self, args):
+    	"""Activate the backup firmware code"""
+    	cli.activateCode()
+
     def do_downloadconfig(self, args):
         """Download a config file to local."""
         cli.downloadConfig(input('where to put the config file?(absolute path)'))

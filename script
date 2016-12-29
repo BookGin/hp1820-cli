@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import pexpect
+import time
+
+child = pexpect.spawn('./sshhp admin@192.168.1.1')
+
+child.expect('Password: ')
+print('Get: %s %s' % (child.before, child.after))
+child.sendline('')
+child.expect('#')
+print('Get: %s %s' % (child.before, child.after))
+child.sendline('uploadcode')
+child.expect('Code file location')
+print('Get: %s %s' % (child.before, child.after))
+child.sendline('files/PT.1.14.stk')
+child.expect('Upload succeeded', 3600)
+print('Get: %s %s' % (child.before, child.after))
+#time.sleep(5)
+#child.sendline('activatecode')
+#child.expect('Switch is rebooting')
+#print('Get: %s %s' % (child.before, child.after))
+child.sendline('exit')

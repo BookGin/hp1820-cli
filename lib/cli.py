@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import urllib.request, urllib.error, ssl
 from math import isnan
 import threading
+import os
 
 class Cli:
     def __init__(self, protocol, host):
@@ -237,17 +238,19 @@ class Cli:
         self._httpPostFile('file_transfer', post_data, files)
 
     def uploadCode(self, filepath):
-
+        filename = os.path.basename(filepath)
         post_data = {
             'file_type_sel[]': 'backup_code',
-            'orig_file_name': 'PT.1.14.stk',
+            'orig_file_name': filename,
             'optDSV': '1',
-            'filename': 'PT.1.14.stk',
-            'transfer_file': 'PT.1.14.stk'
+            'filename': filename,
+            'transfer_file': filename
         }
         files = {'transfer_file': open(filepath, 'rb')}
-        self._httpPostFile('file_transfer', post_data, files)
+        response = self._httpPostFile('file_transfer', post_data, files)
+        print('Upload succeeded. Please activate the code now.')
 
+    def activateCode(self):
         post_data = {
             'active': '',
             'backup': '',
