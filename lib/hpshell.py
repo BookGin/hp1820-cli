@@ -162,7 +162,14 @@ class Prompt(Cmd):
         ipAddr, count, interval, size = input("IP address: "), input("Count (1-15): "), input("Interval (1-60 Seconds): "), input("Size (0-13000Bytes): ")
         cli.ping(ipAddr, count, interval, size)
 
+    def do_loopprotection(self, args):
+        """loop protection on all interface"""
+        cli.loopprotection()
 
+    def do_setmgmtvlan(self, args):
+        """change management vlan id"""
+        vlan_id = input("Vlan ID?: ")
+        cli.setmgmtvlan(vlan_id)
 
 
 prompt = Prompt()
