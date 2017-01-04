@@ -5,7 +5,7 @@ import time
 
 def exe(switch_ip, command):
 	print("do script: %s %s" % (switch_ip, command))
-	os.system("./script " + switch_ip + ' ' + command)
+	os.system("./config_script " + switch_ip + ' ' + command)
 	print switch_ip + " done"
 
 if __name__ == "__main__":

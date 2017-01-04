@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Usage:
-#	./script [Switch IP] [new IP] [new netmask] [Switch name] [Switch location] [new password]
+#	./config_script [Switch IP] [new IP] [new netmask] [Switch name] [Switch location] [new password]
 
 import sys
 import os
