@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import urllib.request, urllib.error, ssl
 from math import isnan
 import threading
+import os
 
 class Cli:
     def __init__(self, protocol, host):
@@ -131,7 +132,9 @@ class Cli:
             'snmp_sel[]': 'enabled',
             'community_name': 'public',
             'b_form1_submit': 'Apply',
-            'b_form1_clicked': 'b_form1_submit'
+            'b_form1_clicked': 'b_form1_submit',
+            'change_mvlan': 'no',
+            'change_mport': 'no'
         }
         post_data = {}
         post_data.update(required_data)
@@ -236,6 +239,86 @@ class Cli:
         files = {'transfer_file': open(filepath, 'rb')}
         self._httpPostFile('file_transfer', post_data, files)
 
+    def uploadCode(self, filepath):
+        filename = os.path.basename(filepath)
+        post_data = {
+            'file_type_sel[]': 'backup_code',
+            'orig_file_name': filename,
+            'optDSV': '1',
+            'filename': filename,
+            'transfer_file': filename
+        }
+        files = {'transfer_file': open(filepath, 'rb')}
+        response = self._httpPostFile('file_transfer', post_data, files)
+        print('Upload succeeded. Please activate the code now.')
+
+    def activateCode(self):
+        post_data = {
+            'active': '',
+            'backup': '',
+            'sel_change_reason': '',
+            'activated_sel[]': 'backup',
+            'b_form1_submit': 'Apply',
+            'b_form1_clicked': 'b_form1_submit'
+        }
+        self._httpPost('dual_image', post_data)
+
+        post_data = {}
+        try:
+            self._httpPost('reboot', post_data, 0.5)
+        except:
+            print('Switch is rebooting, and the connection will be closed.')
+            exit(0)
+
+    def loopprotection(self):
+        post_data = {
+            'loop_protection_sel[]':'enabled',
+            'transmission_time':'5',
+            'shutdown_time':'180',
+            'sorttable1_length':'10',
+            'b_form1_submit':'Apply',
+            'b_form1_clicked':'b_form1_submit'
+        }
+        self._httpPost('loop_protectiona',post_data)
+
+        post_data = {
+            'loop_protection_sel[]':'enabled',
+            'action_sel[]':'shutdown_port',
+            'tx_mode_sel[]':'enabled',
+            'intf':'all',
+            'b_modal1_clicked':'b_modal1_submit'
+        }
+        self._httpPost('loop_protectionb',post_data)
+
+    def setmgmtvlan(self, vlan_id):
+        post_data = {
+            'protocol_type_sel[]':'dhcp',
+            'session_timeout':'5',
+            'mgmt_vlan_id_sel[]':vlan_id,
+            'mgmt_port_sel[]':'none',
+            'snmp_sel[]':'enabled',
+            'community_name':'public',
+            'b_form1_submit':'Apply',
+            'change_mvlan':'yes',
+            'change_mport':'no',
+            'b_form1_clicked':'b_form1_submit'
+        }
+        self._httpPost('set_mgmt_vlan',post_data)
+
+        post_data = {
+            'protocol_type_sel[]':'dhcp',
+            'session_timeout':'5',
+            'mgmt_vlan_id_sel[]':vlan_id,
+            'mgmt_port_sel[]':'none',
+            'snmp_sel[]':'enabled',
+            'community_name':'public',
+            'b_form1_submit':'Apply',
+            'change_mvlan':'no',
+            'change_mport':'no',
+            'b_form1_clicked':'b_form1_submit'
+        }
+        self._httpPost('set_mgmt_vlan',post_data)
+
     def downloadConfig(self, filepath):
         nowtime = int(1000 * time.time())
         post_data = {
@@ -325,8 +408,8 @@ class Cli:
     def _httpGet(self, operation, handle = ''):
         return httpRequest(self.session, 'GET', self._getUrl(operation)+handle)
 
-    def _httpPost(self, operation, post_data):
-        return httpRequest(self.session, 'POST', self._getUrl(operation), post_data)
+    def _httpPost(self, operation, post_data, timeout = 0):
+        return httpRequest(self.session, 'POST', self._getUrl(operation), post_data, None, timeout)
 
     def _httpPostFile(self, operation, post_data, files):
         return httpRequest(self.session, 'POST', self._getUrl(operation), post_data, files)
@@ -415,7 +498,12 @@ URLS = {
     'ping': '/htdocs/pages/base/ping.lsp',
     'ping_ajax': '/htdocs/lua/ajax/ping_ajax.lua?handle=',
     'file_upload': '/htdocs/lua/ajax/file_upload_ajax.lua?protocol=6',
-    'file_download': '/htdocs/pages/base/file_http_download.lsp'
+    'file_download': '/htdocs/pages/base/file_http_download.lsp',
+    'dual_image': '/htdocs/pages/base/dual_image_cfg.lsp',
+    'reboot': '/htdocs/lua/ajax/sys_reset_ajax.lua?reset=1',
+    'loop_protectiona':'/htdocs/pages/switching/loop_config.lsp',
+    'loop_protectionb':'/htdocs/pages/switching/loop_config_modal.lsp',
+    'set_mgmt_vlan':'/htdocs/pages/base/network_ipv4_cfg.lsp'
 }
 
 PROTOCAL_DELIMETER = "://"
@@ -423,13 +511,15 @@ TEST_CONNECTION_TIMEOUT = 5 # second
 
 # private module function
 
-def httpRequest(session, request_method, url, post_data = None, files = None):
+def httpRequest(session, request_method, url, post_data = None, files = None, timeout = 0):
     # GET 
     if request_method == 'GET':
         return session.get(url, verify = False).text
 
     # POST:
-    if files is None:
+    if files is None and timeout != 0:
+        return session.post(url, post_data, verify = False, timeout = timeout).text
+    elif files is None:
         return session.post(url, post_data, verify = False).text
     else:
         return session.post(url, post_data, files = files, verify = False).text

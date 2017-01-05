@@ -122,6 +122,14 @@ class Prompt(Cmd):
         """Upload a config file to switch."""
         cli.uploadConfig(input('config file location?(absolute path)'))
 
+    def do_uploadcode(self, args):
+        """Upload a firmware file to switch."""
+        cli.uploadCode(input('Code file location?(absolute path)'))
+
+    def do_activatecode(self, args):
+    	"""Activate the backup firmware code"""
+    	cli.activateCode()
+
     def do_downloadconfig(self, args):
         """Download a config file to local."""
         cli.downloadConfig(input('where to put the config file?(absolute path)'))
@@ -154,7 +162,14 @@ class Prompt(Cmd):
         ipAddr, count, interval, size = input("IP address: "), input("Count (1-15): "), input("Interval (1-60 Seconds): "), input("Size (0-13000Bytes): ")
         cli.ping(ipAddr, count, interval, size)
 
+    def do_loopprotection(self, args):
+        """loop protection on all interface"""
+        cli.loopprotection()
 
+    def do_setmgmtvlan(self, args):
+        """change management vlan id"""
+        vlan_id = input("Vlan ID?: ")
+        cli.setmgmtvlan(vlan_id)
 
 
 prompt = Prompt()
