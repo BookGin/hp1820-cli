@@ -1,7 +1,6 @@
 from cmd import Cmd
 from getpass import getpass
 from lib import cli
-
 class Prompt(Cmd):
     def do_forceexit(self, args):
         """Quit the program without logout."""
@@ -127,8 +126,8 @@ class Prompt(Cmd):
         cli.uploadCode(input('Code file location?(absolute path)'))
 
     def do_activatecode(self, args):
-    	"""Activate the backup firmware code"""
-    	cli.activateCode()
+        """Activate the backup firmware code"""
+        cli.activateCode()
 
     def do_downloadconfig(self, args):
         """Download a config file to local."""
