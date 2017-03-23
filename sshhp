@@ -2,8 +2,8 @@
 import sys
 from getpass import getpass
 
-from lib.cli import Cli
-from lib import hpshell
+from hp1820cli.cli import Cli
+from hp1820cli import shell
 
 def checkArgument():
     if len(sys.argv) != 2:
@@ -19,7 +19,7 @@ def parseArgument():
         return "admin", sys.argv[1]
 
 def execPrompt(cli):
-    hpshell.run(cli)
+    shell.run(cli)
 
 if __name__ == "__main__":
     checkArgument()

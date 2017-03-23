@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import sys
 
-from lib.cli import Cli
-from lib import hpshell
+from hp1820cli.cli import Cli
+from hp1820cli import shell
 
 def checkArgument():
     if (len(sys.argv) == 4 and sys.argv[3] == 'show') or (len(sys.argv) == 5):
