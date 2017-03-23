@@ -78,6 +78,25 @@ class Cli:
     def showVlanMembership(self):
         printVlanMembership(self._httpGet('all_config'))
 
+    def getVlanMembership(self):
+        raw_response = self._httpGet('all_config')
+        html = BeautifulSoup(raw_response, 'html.parser')
+        first_row = ['VLAN ID', 'Tagged Ports', 'Untagged Ports', 'Exclude Participation']
+        data = []
+        for table in html.find_all("table"):
+            if table["id"] != "sorttable12":
+                continue
+            for row in table.find_all("tr"):
+                data.append([col.get_text() for col in row.find_all("td")])
+
+        vlan_untagged_tuple = []
+        for row in data:
+            if len(row) == 0:
+                continue
+            # vlan id,  untagged port
+            vlan_untagged_tuple.append((row[0], row[2]))
+        return vlan_untagged_tuple
+
     # DEPRECATED: This method uses the same API as showDashboard()
     def getSwitchName(self):
         raw_response = self._httpGet('dashboard')

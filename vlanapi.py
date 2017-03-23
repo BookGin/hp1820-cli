@@ -26,8 +26,9 @@ def parseArgument():
 
 def getConfig(args):
     cli = connectAndLogin(args['host'], args['user'], args['password'])
-    cli.showVlanMembership()
+    membership_tuples = cli.getVlanMembership()
     saveAndLogout(cli)
+    return membership_tuples
 
 def setPortToVlan(args, port, vlan_id):
     cli = connectAndLogin(args['host'], args['user'], args['password'])
