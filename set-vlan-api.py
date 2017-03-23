@@ -23,6 +23,34 @@ def parseArgument():
         args['vlanId'] = sys.argv[4]
     return args
 
+
+def getConfig(args):
+    cli = connectAndLogin(args['host'], args['user'], args['password'])
+    cli.showVlanMembership()
+    saveAndLogout(cli)
+
+def setPortToVlan(args, port, vlan_id):
+    cli = connectAndLogin(args['host'], args['user'], args['password'])
+    cli.accessVlan('untagged', port, vlan_id)
+    saveAndLogout(cli)
+
+def connectAndLogin(host, user, password):
+    if not Cli.testConnection('https', host):
+        raise RuntimeError("Cannot connect to remote host")
+
+    cli = Cli('https', host)
+
+    if not cli.login(user, password):
+        raise RuntimeError("Cannot login.")
+
+    return cli
+
+def saveAndLogout(cli):
+    cli.saveConfig()
+    cli.logout()
+    cli.close()
+
+
 if __name__ == "__main__":
     checkArgument()
     args = parseArgument()
