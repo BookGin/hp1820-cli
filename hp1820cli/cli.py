@@ -89,13 +89,12 @@ class Cli:
             for row in table.find_all("tr"):
                 data.append([col.get_text() for col in row.find_all("td")])
 
-        vlan_untagged_tuple = []
+        vlan_info_list = []
         for row in data:
             if len(row) == 0:
                 continue
-            # vlan id,  untagged port
-            vlan_untagged_tuple.append((row[0], row[2]))
-        return vlan_untagged_tuple
+            vlan_info_list.append(row)
+        return vlan_info_list
 
     # DEPRECATED: This method uses the same API as showDashboard()
     def getSwitchName(self):

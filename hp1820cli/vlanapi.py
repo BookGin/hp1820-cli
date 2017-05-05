@@ -4,16 +4,15 @@ import sys
 from hp1820cli.cli import Cli
 from hp1820cli import shell
 
-
 def getConfig(args):
     cli = _connectAndLogin(args['host'], args['user'], args['password'])
-    membership_tuples = cli.getVlanMembership()
+    membership_list = cli.getVlanMembership()
     _saveAndLogout(cli)
-    return membership_tuples
+    return membership_list
 
-def setPortToVlan(args, port, vlan_id):
+def setPortToVlan(args, port, vlan_id, mode):
     cli = _connectAndLogin(args['host'], args['user'], args['password'])
-    cli.accessVlan('untagged', port, vlan_id)
+    cli.accessVlan(mode, port, vlan_id)
     _saveAndLogout(cli)
 
 def _connectAndLogin(host, user, password):
