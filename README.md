@@ -10,7 +10,7 @@ $ ./sshhp 192.168.1.1
 Cannot connect https://192.168.1.1 : [Errno 111] Connection refused
 HTTPS failed. Try HTTP...
 *****************************************
-*Warning: Connect through HTTP protocal.*
+*Warning: Connect through HTTP protocol.*
 *****************************************
 Password: 
 Type exit/forceexit to quit, help for help.

@@ -15,7 +15,7 @@ class Cli:
 
     @staticmethod
     def testConnection(protocol, host):
-        url = protocol + PROTOCAL_DELIMETER + host
+        url = protocol + PROTOCOL_DELIMETER + host
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
@@ -415,7 +415,7 @@ class Cli:
         return httpRequest(self.session, 'POST', self._getUrl(operation), post_data, files)
 
     def _getUrl(self, operation):
-        return self.protocol + PROTOCAL_DELIMETER + self.host + URLS[operation]
+        return self.protocol + PROTOCOL_DELIMETER + self.host + URLS[operation]
 
     # This function is simply a translation of JS code
     def _ping_ajax(self, handle_val, host_name_ipaddr):
@@ -506,7 +506,7 @@ URLS = {
     'set_mgmt_vlan':'/htdocs/pages/base/network_ipv4_cfg.lsp'
 }
 
-PROTOCAL_DELIMETER = "://"
+PROTOCOL_DELIMETER = "://"
 TEST_CONNECTION_TIMEOUT = 5 # second
 
 # private module function

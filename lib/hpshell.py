@@ -101,8 +101,8 @@ class Prompt(Cmd):
         cli.genCert()
 
     def do_sethttps(self, args):
-        """Set management connection protocal (HTTP or HTTPS)."""
-        print("Note: If the new protocal is different from current one, you have to login again.")
+        """Set management connection protocol (HTTP or HTTPS)."""
+        print("Note: If the new protocol is different from current one, you have to login again.")
         available_choice = {'http': ('enabled', 'disabled'), 'https':('disabled', 'enabled'), 'both':('enabled', 'enabled')}
         choice = input("http only[http]/https only[https]/both[both]?")
         while choice not in available_choice:
