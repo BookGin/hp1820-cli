@@ -1,0 +1,50 @@
+---
+# SPDX-FileCopyrightText: 2021 Robin Schneider <ypid@riseup.net>
+#
+# SPDX-License-Identifier: MIT
+
+- name: Manage HPE 1820 port VLANs from NetBox
+  hosts: [ 'platform_hpe1820' ]
+  become: False
+  gather_facts: False
+  vars:
+    hpe1820__port_vlans: |
+      {% macro print_config() %}
+      {% for interface in interfaces|sort(attribute="id") %}
+      {%  if interface.untagged_vlan|d() or interface.tagged_vlans|d() %}
+      '{{ interface.name }}':
+      {%   if interface.untagged_vlan|d() %}
+        untagged: {{ interface.untagged_vlan.vid }}
+      {%   endif %}
+      {%     if interface.tagged_vlans|d() %}
+        tagged:
+      {%       for vlan in (interface.tagged_vlans) if vlan %}
+          - {{ vlan.vid }}
+      {%       endfor %}
+      {%     else %}
+        tagged: []
+      {%     endif %}
+      {%   endif %}
+      {% endfor %}
+      {% endmacro %}
+      {{ print_config() | from_yaml }}
+
+  environment: '{{ inventory__environment | d({})
+                   | combine(inventory__group_environment | d({}))
+                   | combine(inventory__host_environment  | d({})) }}'
+
+  tasks:
+
+    - debug:
+        var: hpe1820__port_vlans
+      tags: test
+
+    - name: Ensure VLANs to ports
+      hpe1820_port_vlans:
+        port_vlans: '{{ hpe1820__port_vlans }}'
+        host: '{{ inventory_hostname }}'
+        username: '{{ hpe1820__username | d(omit) }}'
+        password: '{{ hpe1820__password }}'
+      delegate_to: 'localhost'
+      register: tmp
+      tags: port_vlans
