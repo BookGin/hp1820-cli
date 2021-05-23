@@ -38,7 +38,7 @@ class Cli:
             return True
 
     @staticmethod
-    def _parse_port_range(port_range_str):
+    def _parse_port_range(port_range_str, internal_ids=False):
         port_range = []
         for port_range_part in port_range_str.replace(' ', '').split(','):
             _re = re.search(r"""
@@ -62,7 +62,10 @@ class Cli:
                 int(matches['first_if']),
                 int(matches['last_if']) + 1)
             for port_item in port_range_iter:
-                port_range.append(f"{matches['port_prefix']}{port_item}")
+                if internal_ids and matches['port_prefix'] != '':
+                    port_range.append(str(53 + port_item))
+                else:
+                    port_range.append(f"{matches['port_prefix']}{port_item}")
 
         return port_range
 
@@ -289,12 +292,14 @@ class Cli:
         else:
             print("Username/Password changed successfully")
 
+    def _get_hpe_internal_interface_ids(self, interfaces):
+        return ','.join(self._parse_port_range(interfaces, internal_ids=True))
 
     def accessVlan(self, mode, interfaces, vlan_id):
         post_data = {
             'part_tagg_sel[]': mode, # tagged, untagged, exclude
             'vlan': vlan_id,
-            'intfStr': interfaces, # 1-8, TRK1: 54, TRK2: 55 ...
+            'intfStr': self._get_hpe_internal_interface_ids(interfaces), # 1-8, TRK1: 54, TRK2: 55 ...
             'part_exclude': 'yes',
             'parentQStr': '?vlan=%s' % vlan_id, # looks like this doesn't matter
             'b_modal1_clicked': 'b_modal1_submit'

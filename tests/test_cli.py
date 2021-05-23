@@ -43,6 +43,12 @@ class Test(TestCase):
             ['1', '9', '10', '11', '17', '18', '19', '20', 'TRK2', 'TRK5', 'TRK6', 'TRK7', 'TRK8']
         )
 
+    def test__get_hpe_internal_interface_ids(self):
+        nose.tools.assert_equal(
+            self.c._get_hpe_internal_interface_ids('1, 9-11, 17-20, TRK2, TRK5-TRK8'),
+            '1,9,10,11,17,18,19,20,55,58,59,60,61'
+        )
+
     def test_get_interfaces_vlan_membership(self):
         vlan_membership = yaml.safe_load(
             textwrap.dedent("""
