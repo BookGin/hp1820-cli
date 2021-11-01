@@ -141,8 +141,8 @@ class Cli:
     def get_interface_vlan_membership_change_actions(self, interface, port_vlans, desired_port_vlans):
         change_actions = []
         vlan_vids = [int(vlan[0]) for vlan in self.getVlans() if len(vlan) == 3]
-        if 'untagged' in desired_port_vlans:
-            if desired_port_vlans['untagged'] is None and 'untagged' in port_vlans:
+        if 'untagged' in desired_port_vlans and 'untagged' in port_vlans:
+            if desired_port_vlans['untagged'] is None:
                 # The switch does not support that:
                 # > If you wish to exclude a port from the current VLAN
                 # > membership you must first make it a tagged/untagged member in
