@@ -15,6 +15,7 @@
       {%   if interface.untagged_vlan|d() or interface.tagged_vlans|d() %}
       {%     if interface.untagged_vlan|d() %}
         untagged: {{ interface.untagged_vlan.vid }}
+        tagged: []
       {%     else %}
         tagged:
       {%       for vlan in (interface.tagged_vlans) if vlan %}

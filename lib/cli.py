@@ -143,7 +143,6 @@ class Cli:
         vlan_vids = [int(vlan[0]) for vlan in self.getVlans() if len(vlan) == 3]
         if 'untagged' in desired_port_vlans:
             if desired_port_vlans['untagged'] is None and 'untagged' in port_vlans:
-                # TODO: Remove unused VLANs from switch. Needs to be done at a later point.
                 # The switch does not support that:
                 # > If you wish to exclude a port from the current VLAN
                 # > membership you must first make it a tagged/untagged member in
@@ -164,6 +163,26 @@ class Cli:
                     change_actions.append(('accessVlan', 'exclude', interface, tagged_vlan))
         return change_actions
 
+    def remove_unused_vlans(self, dry_run=False):
+        defined_vlan_vids = set([int(vlan[0]) for vlan in self.getVlans() if len(vlan) == 3])
+        used_vlan_vids = set()
+        for interface, port_vlans in self.get_interfaces_vlan_membership().items():
+            used_vlan_vids.update(port_vlans.get('tagged', []))
+            if 'untagged' in port_vlans:
+                used_vlan_vids.add(int(port_vlans['untagged']))
+
+        change_actions = []
+        unused_vlan_vids = defined_vlan_vids.difference(used_vlan_vids)
+        if len(unused_vlan_vids) > 0:
+            change_actions.append(('delVlan', ','.join([str(x) for x in unused_vlan_vids])))
+
+        if not dry_run and len(change_actions) > 0:
+            for change_action in change_actions:
+                getattr(self, change_action[0])(*change_action[1:])
+            self.saveConfig()
+
+        return change_actions
+
     def ensure_interfaces_vlan_membership(self, desired_port_vlans, dry_run=False):
         change_actions = []
         interfaces_vlan_membership = self.get_interfaces_vlan_membership()
@@ -179,11 +198,10 @@ class Cli:
                 port_vlans,
                 desired_port_vlans.get(interface, {}),
             ))
-        if not dry_run:
+        if not dry_run and len(change_actions) > 0:
             for change_action in change_actions:
                 getattr(self, change_action[0])(*change_action[1:])
-            if len(change_actions) > 0:
-                self.saveConfig()
+            self.saveConfig()
 
         return change_actions
 

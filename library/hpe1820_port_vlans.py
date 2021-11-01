@@ -29,6 +29,12 @@ options:
         description:
             - Port to VLANs mapping dict. See example for the structure.
         required: true
+    remove_unused_vlans:
+        description:
+            - Remove all VLANs that are not used by any port. Note that --diff
+              mode will be wrong when VLANs are added by port_vlans that were
+              unused.
+        default: true
     host:
         description:
             - Hostname of the switch.
@@ -92,6 +98,7 @@ def run_module():
     module = AnsibleModule(
         argument_spec=dict(
             port_vlans=dict(required=True, type='dict'),
+            remove_unused_vlans=dict(type='bool', default=True),
             host=dict(required=True, type='str'),
             username=dict(type='str', default='admin'),
             password=dict(required=True, type='str', no_log=True),
@@ -100,6 +107,7 @@ def run_module():
     )
 
     port_vlans = module.params['port_vlans']
+    remove_unused_vlans = module.params['remove_unused_vlans']
     host = module.params['host']
     username = module.params['username']
     password = module.params['password']
@@ -116,6 +124,9 @@ def run_module():
     cli.login(username, password)
 
     change_actions = cli.ensure_interfaces_vlan_membership(port_vlans, dry_run=module.check_mode)
+
+    if remove_unused_vlans:
+        change_actions += cli.remove_unused_vlans(dry_run=module.check_mode)
 
     # This only slows it down. Could be made conditional if anybody has a valid use case for it.
     #  result['port_vlans'] = cli.get_interfaces_vlan_membership()
