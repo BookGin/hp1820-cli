@@ -36,7 +36,7 @@ options:
     username:
         description:
             - Username to login on the switch as.
-        required: true
+        default: admin
     password:
         description:
             - Password to use for login.
@@ -93,7 +93,7 @@ def run_module():
         argument_spec=dict(
             port_vlans=dict(required=True, type='dict'),
             host=dict(required=True, type='str'),
-            username=dict(required=False, type='str', default='admin'),
+            username=dict(type='str', default='admin'),
             password=dict(required=True, type='str', no_log=True),
         ),
         supports_check_mode=True,
