@@ -47,13 +47,16 @@ author:
 '''
 
 EXAMPLES = '''
-- name: Ensure port 2 has two VLANs assigned
+- name: Ensure port 2 has two VLANs assigned and 3 none
   hpe1820_port_vlans:
     port_vlans:
       '2':
         untagged: 2900
         tagged:
           - 295
+      '3':
+        untagged: null
+        tagged: []
     host: '{{ inventory_hostname }}'
     username: '{{ hpe1820__username | d(omit) }}'
     password: '{{ hpe1820__password }}'

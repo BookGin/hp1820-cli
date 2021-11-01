@@ -141,10 +141,18 @@ class Cli:
     def get_interface_vlan_membership_change_actions(self, interface, port_vlans, desired_port_vlans):
         change_actions = []
         vlan_vids = [int(vlan[0]) for vlan in self.getVlans() if len(vlan) == 3]
-        if 'untagged' in desired_port_vlans and port_vlans.get('untagged') != desired_port_vlans['untagged']:
-            if desired_port_vlans['untagged'] not in vlan_vids:
-                change_actions.append(('addVlan', desired_port_vlans['untagged']))
-            change_actions.append(('accessVlan', 'untagged', interface, desired_port_vlans['untagged']))
+        if 'untagged' in desired_port_vlans:
+            if desired_port_vlans['untagged'] is None and 'untagged' in port_vlans:
+                # TODO: Remove unused VLANs from switch. Needs to be done at a later point.
+                # The switch does not support that:
+                # > If you wish to exclude a port from the current VLAN
+                # > membership you must first make it a tagged/untagged member in
+                # > another VLAN.
+                change_actions.append(('accessVlan', 'exclude', interface, port_vlans['untagged']))
+            elif port_vlans.get('untagged') != desired_port_vlans['untagged']:
+                if desired_port_vlans['untagged'] not in vlan_vids:
+                    change_actions.append(('addVlan', desired_port_vlans['untagged']))
+                change_actions.append(('accessVlan', 'untagged', interface, desired_port_vlans['untagged']))
         if 'tagged' in desired_port_vlans:
             for desired_tagged_vlan in desired_port_vlans['tagged']:
                 if desired_tagged_vlan not in port_vlans.get('tagged', []):
@@ -570,7 +578,7 @@ class Cli:
             probesent = int(res[10]);
             proberesponse = int(res[11]);
             probefail = int(res[12]);
-            
+
             if (not isnan(handle)) and handle != 0:
                 results = ''
                 if respip != host_name_ipaddr and respip != '0.0.0.0':
@@ -581,7 +589,7 @@ class Cli:
                     results = 'Request Timed Out.'
                 if probesent == self.count:
                     self.done = 1
-                
+
                 if respip != '' and seq != self.seq:
                     print(results)
                 elif respip != '0.0.0.0' and respip != host_name_ipaddr and self.probessent < probesent:
@@ -647,7 +655,7 @@ TEST_CONNECTION_TIMEOUT = 5 # second
 # private module function
 
 def httpRequest(session, request_method, url, post_data = None, files = None, timeout = 0):
-    # GET 
+    # GET
     if request_method == 'GET':
         return session.get(url, verify = False).text
 
