@@ -7,6 +7,7 @@
   hosts: [ 'platform_hpe1820' ]
   become: False
   gather_facts: False
+  strategy: 'linear'
   vars:
     hpe1820__port_vlans: |
       {% macro print_config() %}
