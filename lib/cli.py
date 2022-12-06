@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+#
+# SPDX-FileCopyrightText: 2016 Bookgin <dongsheoil@gmail.com>
+# SPDX-FileCopyrightText: 2021 Robin Schneider <ypid@riseup.net>
+#
+# SPDX-License-Identifier: MIT
+
 import requests
 import json
 import time
@@ -5,8 +12,10 @@ import re as regex
 from bs4 import BeautifulSoup
 import urllib.request, urllib.error, ssl
 from math import isnan
-import threading
+import re
 import os
+import functools
+
 
 class Cli:
     def __init__(self, protocol, host):
@@ -15,7 +24,7 @@ class Cli:
 
     @staticmethod
     def testConnection(protocol, host):
-        url = protocol + PROTOCAL_DELIMETER + host
+        url = protocol + PROTOCOL_DELIMETER + host
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
@@ -27,6 +36,38 @@ class Cli:
             return False
         else:
             return True
+
+    @staticmethod
+    def _parse_port_range(port_range_str, internal_ids=False):
+        port_range = []
+        for port_range_part in port_range_str.replace(' ', '').split(','):
+            _re = re.search(r"""
+                ^
+                (?P<port_prefix>[A-Z]*)
+                (?P<first_if>[0-9]+)
+                (?:
+                    -
+                    (?P=port_prefix)
+                    (?P<last_if>[0-9]+)
+                )?
+                $
+            """, port_range_part, flags=re.VERBOSE)
+            if not _re:
+                raise Exception(f"port_range_part has unknown format: {port_range_part}")
+            matches = _re.groupdict()
+            if matches['last_if'] is None:
+                matches['last_if'] = matches['first_if']
+
+            port_range_iter = range(
+                int(matches['first_if']),
+                int(matches['last_if']) + 1)
+            for port_item in port_range_iter:
+                if internal_ids and matches['port_prefix'] != '':
+                    port_range.append(str(53 + port_item))
+                else:
+                    port_range.append(f"{matches['port_prefix']}{port_item}")
+
+        return port_range
 
     def login(self, username, password):
         try:
@@ -75,8 +116,123 @@ class Cli:
     def showDashboard(self):
         printDashboard(self._httpGet('dashboard'))
 
+    def _set_vlan_port_in_variable(self, port_vlans, vlan, index, mode):
+        vid = int(vlan[0])
+        if vlan[index] != '':
+            for vlan_port in self._parse_port_range(vlan[index]):
+                port_vlans.setdefault(vlan_port, {})
+                if mode == 'untagged':
+                    port_vlans[vlan_port][mode] = vid
+                elif mode == 'tagged':
+                    port_vlans[vlan_port].setdefault(mode, [])
+                    port_vlans[vlan_port][mode].append(vid)
+
+    def get_interfaces_vlan_membership(self):
+        port_vlans = {}
+        vlan_membership = self.getVlanMembership()
+        for vlan in vlan_membership:
+            if len(vlan) != 4:
+                continue
+            self._set_vlan_port_in_variable(port_vlans, vlan, 1, 'tagged')
+            self._set_vlan_port_in_variable(port_vlans, vlan, 2, 'untagged')
+            self._set_vlan_port_in_variable(port_vlans, vlan, 3, 'exclude')
+        return port_vlans
+
+    def get_interface_vlan_membership_change_actions(self, interface, port_vlans, desired_port_vlans):
+        change_actions = []
+        vlan_vids = [int(vlan[0]) for vlan in self.getVlans() if len(vlan) == 3]
+        if 'untagged' in desired_port_vlans and 'untagged' in port_vlans:
+            if desired_port_vlans['untagged'] is None:
+                # The switch does not support that:
+                # > If you wish to exclude a port from the current VLAN
+                # > membership you must first make it a tagged/untagged member in
+                # > another VLAN.
+                change_actions.append(('accessVlan', 'exclude', interface, port_vlans['untagged']))
+            elif port_vlans.get('untagged') != desired_port_vlans['untagged']:
+                if desired_port_vlans['untagged'] not in vlan_vids:
+                    change_actions.append(('addVlan', desired_port_vlans['untagged']))
+                change_actions.append(('accessVlan', 'untagged', interface, desired_port_vlans['untagged']))
+        if 'tagged' in desired_port_vlans:
+            for desired_tagged_vlan in desired_port_vlans['tagged']:
+                if desired_tagged_vlan not in port_vlans.get('tagged', []):
+                    if desired_tagged_vlan not in vlan_vids:
+                        change_actions.append(('addVlan', desired_tagged_vlan))
+                    change_actions.append(('accessVlan', 'tagged', interface, desired_tagged_vlan))
+            for tagged_vlan in port_vlans.get('tagged', []):
+                if tagged_vlan not in desired_port_vlans['tagged']:
+                    change_actions.append(('accessVlan', 'exclude', interface, tagged_vlan))
+        return change_actions
+
+    def remove_unused_vlans(self, dry_run=False):
+        defined_vlan_vids = set([int(vlan[0]) for vlan in self.getVlans() if len(vlan) == 3])
+        used_vlan_vids = set()
+        for interface, port_vlans in self.get_interfaces_vlan_membership().items():
+            used_vlan_vids.update(port_vlans.get('tagged', []))
+            if 'untagged' in port_vlans:
+                used_vlan_vids.add(int(port_vlans['untagged']))
+
+        change_actions = []
+        unused_vlan_vids = defined_vlan_vids.difference(used_vlan_vids)
+        if len(unused_vlan_vids) > 0:
+            change_actions.append(('delVlan', ','.join([str(x) for x in unused_vlan_vids])))
+
+        if not dry_run and len(change_actions) > 0:
+            for change_action in change_actions:
+                getattr(self, change_action[0])(*change_action[1:])
+            self.saveConfig()
+
+        return change_actions
+
+    def ensure_interfaces_vlan_membership(self, desired_port_vlans, dry_run=False):
+        change_actions = []
+        interfaces_vlan_membership = self.get_interfaces_vlan_membership()
+        interfaces_not_existing_on_switch = []
+        for interface in desired_port_vlans.keys():
+            if interface not in interfaces_vlan_membership:
+                interfaces_not_existing_on_switch.append(interface)
+        if len(interfaces_not_existing_on_switch) > 0:
+            raise Exception(f"The switch does not have the following ports: {','.join(interfaces_not_existing_on_switch)}")
+        for interface, port_vlans in interfaces_vlan_membership.items():
+            change_actions.extend(self.get_interface_vlan_membership_change_actions(
+                interface,
+                port_vlans,
+                desired_port_vlans.get(interface, {}),
+            ))
+        if not dry_run and len(change_actions) > 0:
+            for change_action in change_actions:
+                getattr(self, change_action[0])(*change_action[1:])
+            self.saveConfig()
+
+        return change_actions
+
+    @functools.lru_cache()
+    def _get_all_config(self):
+        return self._httpGet('all_config')
+
+    # TODO: Refactor out of Cli class.
+    def getVlanMembership(self):
+        html = BeautifulSoup(self._get_all_config(), 'html.parser')
+        data = []
+        for table in html.find_all("table"):
+            if table["id"] != "sorttable12":
+                continue
+            for row in table.find_all("tr"):
+                data.append([col.get_text() for col in row.find_all("td")])
+        return data
+
+    def getVlans(self):
+        html = BeautifulSoup(self._get_all_config(), 'html.parser')
+        data = []
+        for table in html.find_all("table"):
+            if table["id"] != "sorttable10":
+                continue
+            for row in table.find_all("tr"):
+                data.append([col.get_text() for col in row.find_all("td")])
+        return data
+
     def showVlanMembership(self):
-        printVlanMembership(self._httpGet('all_config'))
+        first_row = ['VLAN ID', 'Tagged Ports', 'Untagged Ports', 'Exclude Participation']
+        printTable(first_row, self.getVlanMembership())
 
     # DEPRECATED: This method uses the same API as showDashboard()
     def getSwitchName(self):
@@ -162,17 +318,20 @@ class Cli:
         else:
             print("Username/Password changed successfully")
 
+    def _get_hpe_internal_interface_ids(self, interfaces):
+        return ','.join(self._parse_port_range(interfaces, internal_ids=True))
 
     def accessVlan(self, mode, interfaces, vlan_id):
         post_data = {
             'part_tagg_sel[]': mode, # tagged, untagged, exclude
             'vlan': vlan_id,
-            'intfStr': interfaces, # 1-8, TRK1: 54, TRK2: 55 ...
+            'intfStr': self._get_hpe_internal_interface_ids(interfaces), # 1-8, TRK1: 54, TRK2: 55 ...
             'part_exclude': 'yes',
             'parentQStr': '?vlan=%s' % vlan_id, # looks like this doesn't matter
             'b_modal1_clicked': 'b_modal1_submit'
         }
         self._httpPost('access_vlan', post_data)
+        self._get_all_config.cache_clear()
 
     # @param example: 5-18 or 7 or 1,4,7
     def addVlan(self, vlan_id_str):
@@ -182,6 +341,7 @@ class Cli:
             'b_modal1_clicked': 'b_modal1_submit'
         }
         self._httpPost('add_vlan', post_data)
+        self._get_all_config.cache_clear()
 
     # @param example: 5-18 or 7 or 1,4,7
     def delVlan(self, vlan_id_str):
@@ -192,6 +352,7 @@ class Cli:
             'b_form1_clicked': 'b_form1_dt_remove'
         }
         self._httpPost('del_vlan', post_data)
+        self._get_all_config.cache_clear()
 
     # Generate https SSL certificate.
     def genCert(self):
@@ -415,7 +576,7 @@ class Cli:
         return httpRequest(self.session, 'POST', self._getUrl(operation), post_data, files)
 
     def _getUrl(self, operation):
-        return self.protocol + PROTOCAL_DELIMETER + self.host + URLS[operation]
+        return self.protocol + PROTOCOL_DELIMETER + self.host + URLS[operation]
 
     # This function is simply a translation of JS code
     def _ping_ajax(self, handle_val, host_name_ipaddr):
@@ -435,7 +596,7 @@ class Cli:
             probesent = int(res[10]);
             proberesponse = int(res[11]);
             probefail = int(res[12]);
-            
+
             if (not isnan(handle)) and handle != 0:
                 results = ''
                 if respip != host_name_ipaddr and respip != '0.0.0.0':
@@ -446,7 +607,7 @@ class Cli:
                     results = 'Request Timed Out.'
                 if probesent == self.count:
                     self.done = 1
-                
+
                 if respip != '' and seq != self.seq:
                     print(results)
                 elif respip != '0.0.0.0' and respip != host_name_ipaddr and self.probessent < probesent:
@@ -506,13 +667,13 @@ URLS = {
     'set_mgmt_vlan':'/htdocs/pages/base/network_ipv4_cfg.lsp'
 }
 
-PROTOCAL_DELIMETER = "://"
+PROTOCOL_DELIMETER = "://"
 TEST_CONNECTION_TIMEOUT = 5 # second
 
 # private module function
 
 def httpRequest(session, request_method, url, post_data = None, files = None, timeout = 0):
-    # GET 
+    # GET
     if request_method == 'GET':
         return session.get(url, verify = False).text
 
@@ -570,14 +731,3 @@ def printDashboard(raw_response):
                 print(val.input['value'])
             else:
                 print(val.get_text().replace('\n', ''))
-
-def printVlanMembership(raw_response):
-    html = BeautifulSoup(raw_response, 'html.parser')
-    first_row = ['VLAN ID', 'Tagged Ports', 'Untagged Ports', 'Exclude Participation']
-    data = []
-    for table in html.find_all("table"):
-        if table["id"] != "sorttable12":
-            continue
-        for row in table.find_all("tr"):
-            data.append([col.get_text() for col in row.find_all("td")])
-    printTable(first_row, data)

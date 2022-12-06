@@ -7,7 +7,7 @@ from lib import hpshell
 
 def checkArgument():
     if len(sys.argv) != 2:
-        print("http - Connect a switch through HTTP protocal")
+        print("http - Connect a switch through HTTP protocol")
         print("Usage: http [user@]host")
         print("(If not specified, username is admin.)")
         sys.exit(0)
@@ -35,7 +35,7 @@ if __name__ == "__main__":
         if Cli.testConnection('http', host):
             cli = Cli('http', host)
             print("*****************************************")
-            print("*Warning: Connect through HTTP protocal.*")
+            print("*Warning: Connect through HTTP protocol.*")
             print("*****************************************")
         else:
             print("Error: Cannot connect to remote host through HTTP and HTTPS.")

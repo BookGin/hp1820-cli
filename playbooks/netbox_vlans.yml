@@ -1,0 +1,56 @@
+---
+# SPDX-FileCopyrightText: 2021 Robin Schneider <ypid@riseup.net>
+#
+# SPDX-License-Identifier: MIT
+
+- name: Manage HPE 1820 port VLANs from NetBox
+  hosts: [ 'platform_hpe1820' ]
+  become: False
+  gather_facts: False
+  strategy: 'linear'
+  vars:
+    hpe1820__port_vlans: |
+      {% macro print_config() %}
+      {% for interface in interfaces|sort(attribute="id") %}
+      '{{ interface.name }}':
+      {%   if interface.untagged_vlan|d() or interface.tagged_vlans|d() %}
+      {%     if interface.untagged_vlan|d() %}
+        untagged: {{ interface.untagged_vlan.vid }}
+        tagged: []
+      {%     else %}
+        tagged:
+      {%       for vlan in (interface.tagged_vlans) if vlan %}
+          - {{ vlan.vid }}
+      {%       endfor %}
+      {%     endif %}
+      {%   else %}
+        # Set to untagged default VLAN.
+        # > If you wish to exclude a port from the current VLAN
+        # > membership you must first make it a tagged/untagged member in
+        # > another VLAN.
+        untagged: 1
+        tagged: []
+      {%   endif %}
+      {% endfor %}
+      {% endmacro %}
+      {{ print_config() }}
+
+  environment: '{{ inventory__environment | d({})
+                   | combine(inventory__group_environment | d({}))
+                   | combine(inventory__host_environment  | d({})) }}'
+
+  tasks:
+
+    - debug:
+        var: hpe1820__port_vlans
+      tags: test
+
+    - name: Ensure VLANs to ports
+      hpe1820_port_vlans:
+        port_vlans: '{{ hpe1820__port_vlans | from_yaml }}'
+        host: '{{ inventory_hostname }}'
+        username: '{{ hpe1820__username | d(omit) }}'
+        password: '{{ hpe1820__password }}'
+      delegate_to: 'localhost'
+      register: tmp
+      tags: port_vlans
