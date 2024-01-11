@@ -56,6 +56,10 @@ class Cli:
         first_row = ['Interface', 'Admin Mode', 'Physical Type', 'Port Status', 'Physical Mode', 'Link Speed', 'MTU']
         showStatus(self._httpGet('port_status'), first_row)
 
+    def showPoeStatus(self):
+        first_row = ['Interface', 'Admin Mode', 'Priority', 'Schedule', 'High Power Mode', 'Power Detect Type', 'Power Limit Type', 'Status', 'Fault Status']
+        showStatus(self._httpGet('poe_status'), first_row)
+
     def showPortChannel(self):
         first_row = ['Interface', 'Name', 'Type', 'Admin Mode', 'Link Status', 'Members', 'Active Ports']
         showStatus(self._httpGet('port_channel'), first_row)
@@ -347,6 +351,20 @@ class Cli:
         }
         self._httpPost('set_port_status', post_data)
 
+    def setPoeStatus(self, interface, status):
+        post_data = {
+            'admin_mode_sel[]': status,               # enabled, disabled
+            'schedule_sel[]': 'none',                 # none, 1, 2
+            'priority_sel[]': 'low',                  # critical, high, low
+            'high_power_mode_sel[]': 'disable',       # dot3at, disable
+            'power_detect_type_sel[]': '4pt_dot3af',  # 4pt_dot3af, 4pt_dot3af_leg
+            'power_limit_type_sel[]': 'dot3af',       # dot3af, user
+            'power_limit': '',                        # 3-15.4
+            'intfStr': interface,
+            'b_modal1_clicked': 'b_modal1_submit'
+        }
+        self._httpPost('set_port_status', post_data)
+
     def setPortChannel(self, channel_id, interface_id_str, admin_mode, stp_mode, static_mode, clear = False):
         interface_ids = parseIds(interface_id_str)
         not_interface_ids = [i for i in range(1, 8 + 1) if i not in interface_ids]
@@ -481,12 +499,14 @@ URLS = {
     'port_channel': '/htdocs/pages/switching/port_channel_summary.lsp',
     'all_config': '/htdocs/pages/base/support.lsp',
     'port_status': '/htdocs/pages/base/port_summary.lsp?tg=switch_port_config&showtab=1',
+    'poe_status': '/htdocs/pages/base/poe_port_cfg.lsp',
     'vlan_status': '/htdocs/pages/switching/vlan_status.lsp',
     'port_statistic': '/htdocs/pages/base/port_summary_stats.lsp',
     'add_vlan': '/htdocs/pages/switching/vlan_status_modal.lsp',
     'del_vlan': '/htdocs/pages/switching/vlan_status.lsp',
     'access_vlan': '/htdocs/pages/switching/vlan_per_port_modal.lsp',
     'set_port_status': '/htdocs/pages/base/port_summary_modal.lsp',
+    'set_poe_status': '/htdocs/pages/base/poe_port_cfg_modal.lsp',
     'set_sysinfo': '/htdocs/pages/base/dashboard.lsp',
     'set_port_channel': '/htdocs/pages/switching/port_channel_modal.lsp',
     'set_network': '/htdocs/pages/base/network_ipv4_cfg.lsp',

@@ -31,6 +31,10 @@ class Prompt(Cmd):
         """Show interfaces status."""
         cli.showPortStatus()
 
+    def do_showpoe(self, args):
+        """Show POE status."""
+        cli.showPoeStatus()
+
     def do_showportchannel(self, args):
         """Show port channel information."""
         cli.showPortChannel()
@@ -156,6 +160,14 @@ class Prompt(Cmd):
         while mode not in available_mode:
             mode = input("enable or disable a port(e/d)?")
         cli.setPortStatus(input("Interfaces(1-8), TRK1-4 (54-57)?"), available_mode[mode])
+
+    def do_setpoestatus(self, args):
+        """Enable or disable POE."""
+        available_mode = {'e':'enabled', 'd':'disabled'}
+        mode = input("enable or disable POE on a port (e/d)?")
+        while mode not in available_mode:
+            mode = input("enable or disable POE on a port (e/d)?")
+        cli.setPoeStatus(input("Interfaces(1-12)?"), available_mode[mode])
 
     def do_ping(self, args):
         """Ping an IP through the switch"""
